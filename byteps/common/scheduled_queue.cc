@@ -166,7 +166,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
       _rt->ClearReadyCount((*it)->key);
     }
     std::string tmp = (*it) -> tensor_name;
-    BPS_LOG << _qt << " tensor name: " << tmp;
+    BPS_LOG(INFO) << _qt << " tensor name: " << tmp;
     if(_qt == PUSH && tmp.find("gradient") != tmp.npos )
     {
         BPS_LOG(INFO) << "Task: " << task -> priority << "I have meet zero: " << _meetzero << " and door is open: " << _dooropen;
