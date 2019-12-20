@@ -56,7 +56,7 @@ BytePSScheduledQueue::BytePSScheduledQueue(QueueType type) {
       }
       break;
     case PUSH:
-      //BPS_LOG(INFO) << "IN PUSH: " << _is_scheduled ;
+      //BPS_LOG(DEBUG) << "IN PUSH: " << _is_scheduled ;
       if (BytePSGlobal::IsRootDevice()) {
         _rt = BytePSGlobal::GetPushTable();
       }
@@ -65,14 +65,14 @@ BytePSScheduledQueue::BytePSScheduledQueue(QueueType type) {
       {
         for(int j = _grad_checkpoint[i]; j <= _middle[i];j++){
             _myqueue.push(j * -1 );
-            BPS_LOG(INFO) << " PUSH element into myqueue: " << j ;
+            BPS_LOG(DEBUG) << " PUSH element into myqueue: " << j ;
         }
       }
       for(int i = 0 ; i <= 11; i++)
       {
         for(int j = _middle[i] + 1; j < _grad_checkpoint[i + 1] ; j++){
             _myqueue.push(j * -1);
-            BPS_LOG(INFO) << " PUSH element into myqueue: " << j ;
+            BPS_LOG(DEBUG) << " PUSH element into myqueue: " << j ;
         }
       }
       for(int i = 0;i < 160; i++)
@@ -80,7 +80,7 @@ BytePSScheduledQueue::BytePSScheduledQueue(QueueType type) {
         _vis[i] = 0;
         _tensor_part[i] = 0;
       }
-      BPS_LOG(INFO) << " Done. DOOR IS " << _dooropen ;
+      BPS_LOG(DEBUG) << " Done. DOOR IS " << _dooropen ;
       break;
     case COPYH2D:
       if (!BytePSGlobal::IsRootDevice()) {
@@ -167,13 +167,13 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
     }
     std::string tmp = (*it) -> tensor_name;
     task = *it;
-    BPS_LOG(INFO) << _qt << " tensor name: " << tmp;
+    BPS_LOG(DEBUG) << _qt << " tensor name: " << tmp;
     if(_qt == PUSH && tmp.find("gradient") != tmp.npos )
     {
-        BPS_LOG(INFO) << "Task: " <<  task-> priority << "I have meet zero: " << _meetzero << " and door is open: " << _dooropen;
+        BPS_LOG(DEBUG) << "Task: " <<  task-> priority << "I have meet zero: " << _meetzero << " and door is open: " << _dooropen;
         if(task -> priority == 0) {
           _meetzero = 1;
-         BPS_LOG(INFO) << "Meet zero.";
+         BPS_LOG(DEBUG) << "Meet zero.";
          }
         if(!_meetzero)
         {
@@ -184,7 +184,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
             _vis[(*it) -> priority * -1] ++;
         }
         else if(!_dooropen) {//we cannot change the value of tensor_part if door is closed.
-          BPS_LOG(INFO) << "door is closed.";
+          BPS_LOG(DEBUG) << "door is closed.";
           break;
         }
         else {
@@ -194,14 +194,14 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
             if( !_vis[_myqueue.front() * -1] )_myqueue.pop();
             _vis[(*it) -> priority * -1] ++;
             _dooropen = 0;
-            BPS_LOG(INFO) << "The door has been closed.";
+            BPS_LOG(DEBUG) << "The door has been closed.";
         }
 
-         BPS_LOG(INFO) << "transferred tensor num: " << _tensor_num  << "  empty: " << _myqueue.empty() ;
+         BPS_LOG(DEBUG) << "transferred tensor num: " << _tensor_num  << "  empty: " << _myqueue.empty() ;
         //all push process end in this iteration , then reinitalize varibles.
         if(_tensor_num == 157 && _myqueue.empty())
         {
-          BPS_LOG(INFO) << "Clear.";
+          BPS_LOG(DEBUG) << "Clear.";
           _meetzero = 0;
           _dooropen = 1;
           _tensor_num = 0;
@@ -212,7 +212,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
             for(int j = _grad_checkpoint[i]; j <= _middle[i];j++)
             {
                 _myqueue.push(j * -1 );
-                BPS_LOG(INFO) << " PUSH element into myqueue: " << j ;
+                BPS_LOG(DEBUG) << " PUSH element into myqueue: " << j ;
             }
           }
           for(int i = 0 ; i <= 11; i++)
@@ -220,7 +220,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
             for(int j = _middle[i] + 1; j < _grad_checkpoint[i + 1] ; j++)
             {
                 _myqueue.push(j * -1);
-                BPS_LOG(INFO) << " PUSH element into myqueue: " << j ;
+                BPS_LOG(DEBUG) << " PUSH element into myqueue: " << j ;
             }
           }
         }
@@ -284,10 +284,10 @@ void BytePSScheduledQueue::reportFinish(int size) {
   {
     if(_meetzero) {
          _dooropen = 1;
-          BPS_LOG(INFO) << "finished, door open again.";
+          BPS_LOG(DEBUG) << "finished, door open again.";
        }
     else
-    BPS_LOG(INFO) << "push finished";
+    BPS_LOG(DEBUG) << "push finished";
     
   }
   return;
