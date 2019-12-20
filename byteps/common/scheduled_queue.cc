@@ -188,6 +188,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
           break;
         }
         else {
+           if((*it) -> priority !=  _myqueue.front() && !_vis[(*it) -> priority * -1] && !_myqueue.empty() )continue;
             _tensor_part[ (*it) -> priority * -1]++; 
             if(_tensor_part[ (*it) -> priority * -1 ] == (*it) -> total_partnum )_tensor_num++;
             if( !_vis[_myqueue.front() * -1] )_myqueue.pop();
