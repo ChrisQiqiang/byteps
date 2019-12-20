@@ -194,11 +194,11 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
             if((*it) -> priority ==  _myqueue.front() &&  !_vis[_myqueue.front() * -1] )_myqueue.pop();
             _vis[(*it) -> priority * -1] ++;
             _dooropen = 0;
-            BPS_LOG(INFO) << "PUSH gradient: " << tmp ;
-            BPS_LOG(INFO) << "The door has been closed.";
+            BPS_LOG(DEBUG) << "PUSH gradient: " << tmp ;
+            BPS_LOG(DEBUG) << "The door has been closed.";
         }
 
-         BPS_LOG(INFO) << "transferred tensor num: " << _tensor_num  << "  empty: " << _myqueue.empty() << " size of myqueue: " << _myqueue.size();
+         BPS_LOG(DEBUG) << "transferred tensor num: " << _tensor_num  << "  empty: " << _myqueue.empty() << " size of myqueue: " << _myqueue.size();
 
         //all push process end in this iteration , then reinitalize varibles.
         if(_tensor_num == 157 && _myqueue.empty())
