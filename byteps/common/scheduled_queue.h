@@ -54,6 +54,7 @@ class BytePSScheduledQueue {
   int _shrink_size;
   int _meetzero = 0;
   int _dooropen = 8;
+  int _doorcount = 0;
   int _grad_checkpoint[13] = {0,10,23,36,51,63,78,91,104,118,131,144,157};
   int _middle[12] = {5,22,35,50,62,65,81,95,108,120,133,147};
   QueueType _qt;
