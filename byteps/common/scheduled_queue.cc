@@ -180,7 +180,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
             if((*it) -> priority !=  _myqueue.front() && !_vis[(*it) -> priority * -1] && !_myqueue.empty() )continue; 
             _tensor_part[ (*it) -> priority * -1]++; 
             if(_tensor_part[ (*it) -> priority * -1 ] == (*it) -> total_partnum )_tensor_num++;
-            if( !_vis[_myqueue.front() * -1] )_myqueue.pop();
+            if( (*it) -> priority ==  _myqueue.front() && !_vis[_myqueue.front() * -1])_myqueue.pop();
             _vis[(*it) -> priority * -1] ++;
         }
         else if(!_dooropen) {//we cannot change the value of tensor_part if door is closed.
@@ -191,14 +191,15 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
            if((*it) -> priority !=  _myqueue.front() && !_vis[(*it) -> priority * -1] && !_myqueue.empty() )continue;
             _tensor_part[ (*it) -> priority * -1]++; 
             if(_tensor_part[ (*it) -> priority * -1 ] == (*it) -> total_partnum )_tensor_num++;
-            if( !_vis[_myqueue.front() * -1] )_myqueue.pop();
+            if((*it) -> priority ==  _myqueue.front() &&  !_vis[_myqueue.front() * -1] )_myqueue.pop();
             _vis[(*it) -> priority * -1] ++;
             _dooropen = 0;
             BPS_LOG(INFO) << "PUSH gradient: " << tmp ;
             BPS_LOG(INFO) << "The door has been closed.";
         }
 
-         BPS_LOG(DEBUG) << "transferred tensor num: " << _tensor_num  << "  empty: " << _myqueue.empty() ;
+         BPS_LOG(INFO) << "transferred tensor num: " << _tensor_num  << "  empty: " << _myqueue.empty() << " size of myqueue: " << _myqueue.size();
+
         //all push process end in this iteration , then reinitalize varibles.
         if(_tensor_num == 157 && _myqueue.empty())
         {
