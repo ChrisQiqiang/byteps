@@ -184,7 +184,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
             _vis[(*it) -> priority * -1] ++;
         }
         else if(!_dooropen) {//we cannot change the value of tensor_part if door is closed.
-          BPS_LOG(DEBUG) << "door is closed.";
+          BPS_LOG(INFO) << "door is closed.";
           break;
         }
         else {
@@ -285,8 +285,9 @@ void BytePSScheduledQueue::reportFinish(int size) {
   if(_qt == PUSH)
   {
     if(_meetzero) {
-         _dooropen++;
-          BPS_LOG(DEBUG) << "finished, door open again.";
+         if(_dooropen < 8)
+              _dooropen++;
+          BPS_LOG(INFO) << "door open value:" << _dooropen;
        }
     else
     BPS_LOG(DEBUG) << "push finished";
