@@ -205,7 +205,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
         {
           BPS_LOG(DEBUG) << "Clear.";
           _meetzero = 0;
-          _dooropen = 5;
+          _dooropen = 8;
           _tensor_num = 0;
           for(int i = 0; i < 160; i++)_tensor_part[i] = 0;
           for(int i = 0;i < 160; i++) _vis[i] = 0;  
