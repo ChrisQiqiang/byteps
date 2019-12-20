@@ -291,10 +291,6 @@ void BytePSScheduledQueue::reportFinish(int size) {
             }
          }       
          // BPS_LOG(INFO) << "door open value:" << _dooropen;
-       }
-    else
-    BPS_LOG(DEBUG) << "push finished";
-    
   }
   return;
 }
