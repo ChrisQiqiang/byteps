@@ -193,9 +193,9 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
             if(_tensor_part[ (*it) -> priority * -1 ] == (*it) -> total_partnum )_tensor_num++;
             if((*it) -> priority ==  _myqueue.front() &&  !_vis[_myqueue.front() * -1] )_myqueue.pop();
             _vis[(*it) -> priority * -1] ++;
-            _dooropen = 0;
+            _dooropen--;
             BPS_LOG(DEBUG) << "PUSH gradient: " << tmp ;
-            BPS_LOG(DEBUG) << "The door has been closed.";
+            // BPS_LOG(DEBUG) << "The door has been closed.";
         }
 
          BPS_LOG(DEBUG) << "transferred tensor num: " << _tensor_num  << "  empty: " << _myqueue.empty() << " size of myqueue: " << _myqueue.size();
@@ -205,7 +205,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
         {
           BPS_LOG(DEBUG) << "Clear.";
           _meetzero = 0;
-          _dooropen = 1;
+          _dooropen = 5;
           _tensor_num = 0;
           for(int i = 0; i < 160; i++)_tensor_part[i] = 0;
           for(int i = 0;i < 160; i++) _vis[i] = 0;  
@@ -285,7 +285,7 @@ void BytePSScheduledQueue::reportFinish(int size) {
   if(_qt == PUSH)
   {
     if(_meetzero) {
-         _dooropen = 1;
+         _dooropen++;
           BPS_LOG(DEBUG) << "finished, door open again.";
        }
     else
