@@ -56,7 +56,7 @@ BytePSScheduledQueue::BytePSScheduledQueue(QueueType type) {
       }
       break;
     case PUSH:
-      //BPS_LOG(DEBUG) << "IN PUSH: " << _is_scheduled ;
+      //BPS_LOG(INFO) << "IN PUSH: " << _is_scheduled ;
       if (BytePSGlobal::IsRootDevice()) {
         _rt = BytePSGlobal::GetPushTable();
       }
@@ -65,14 +65,14 @@ BytePSScheduledQueue::BytePSScheduledQueue(QueueType type) {
       {
         for(int j = _grad_checkpoint[i]; j <= _middle[i];j++){
             _myqueue.push(j * -1 );
-            BPS_LOG(DEBUG) << " PUSH element into myqueue: " << j ;
+            BPS_LOG(INFO) << " PUSH element into myqueue: " << j ;
         }
       }
       for(int i = 0 ; i <= 11; i++)
       {
         for(int j = _middle[i] + 1; j < _grad_checkpoint[i + 1] ; j++){
             _myqueue.push(j * -1);
-            BPS_LOG(DEBUG) << " PUSH element into myqueue: " << j ;
+            BPS_LOG(INFO) << " PUSH element into myqueue: " << j ;
         }
       }
       for(int i = 0;i < 160; i++)
@@ -80,7 +80,7 @@ BytePSScheduledQueue::BytePSScheduledQueue(QueueType type) {
         _vis[i] = 0;
         _tensor_part[i] = 0;
       }
-      BPS_LOG(DEBUG) << " Done. DOOR IS " << _dooropen ;
+      BPS_LOG(INFO) << " Done. DOOR IS " << _dooropen ;
       break;
     case COPYH2D:
       if (!BytePSGlobal::IsRootDevice()) {
@@ -165,15 +165,14 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
       }
       _rt->ClearReadyCount((*it)->key);
     }
-///////////
     std::string tmp = (*it) -> tensor_name;
 
     if(_qt == PUSH && tmp.find("gradient") != tmp.npos )
     {
-        BPS_LOG(DEBUG) << "Task: " << task -> priority << "I have meet zero: " << _meetzero << " and door is open: " << _dooropen;
+        BPS_LOG(INFO) << "Task: " << task -> priority << "I have meet zero: " << _meetzero << " and door is open: " << _dooropen;
         if(task -> priority == 0) {
           _meetzero = 1;
-         BPS_LOG(DEBUG) << "Meet zero.";
+         BPS_LOG(INFO) << "Meet zero.";
          }
         if(!_meetzero)
         {
@@ -212,7 +211,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
             for(int j = _grad_checkpoint[i]; j <= _middle[i];j++)
             {
                 _myqueue.push(j * -1 );
-                BPS_LOG(DEBUG) << " PUSH element into myqueue: " << j ;
+                BPS_LOG(INFO) << " PUSH element into myqueue: " << j ;
             }
           }
           for(int i = 0 ; i <= 11; i++)
@@ -220,42 +219,12 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
             for(int j = _middle[i] + 1; j < _grad_checkpoint[i + 1] ; j++)
             {
                 _myqueue.push(j * -1);
-                BPS_LOG(DEBUG) << " PUSH element into myqueue: " << j ;
+                BPS_LOG(INFO) << " PUSH element into myqueue: " << j ;
             }
           }
         }
     }
 
-    // if(_qt == PUSH && tmp.find("gradient") != tmp.npos)
-    // {
-    //   BPS_LOG(DEBUG) << "tensor could get task: " << (*it) -> priority << " its tensor name is:" << tmp << "   myqueue top element " << _myqueue.front();
-    //   BPS_LOG(DEBUG) << "The vis of this tensor: " << tmp << "is: " << _vis[(*it) -> priority * -1] ;
-    //   BPS_LOG(DEBUG) << "size of _myqueue: " << _myqueue.size()  << "size of _sq: " << _sq.size();
-    //    //ignore tensors whose priority is not equal with first element of myqueue(not empty), as for other parts of a tensor whose priority has been poped, we just gettask.
-    //   BPS_LOG(DEBUG) << "p" << (*it) -> priority << "_myqueue.front()" << _myqueue.front() << " vis:" << _vis[(*it) -> priority * -1];
-    //   if((*it) -> priority !=  _myqueue.front() && !_vis[(*it) -> priority * -1] && !_myqueue.empty() )
-    //   {
-    //     BPS_LOG(DEBUG) << "Continue";
-    //     continue; 
-    //   }   
-      
-    //   BPS_LOG(DEBUG) << "tensor is getting task: " << (*it) -> priority << "   myqueue top element " << _myqueue.front();
-
-    //   BPS_LOG(DEBUG) << "tensor_num is: " << _tensor_num << " total num is:" << (*it) -> total_partnum;    
-    //  _tensor_part[ (*it) -> priority * -1]++;      
-    //  if(_tensor_part[ (*it) -> priority * -1 ] == (*it) -> total_partnum ) //we cannot initialize the _vis and _myqueue immediately, cause some tensors may not be transferred over.
-    //  {
-    //    BPS_LOG(DEBUG) << "all part done, num++";	
-    //    _tensor_num++;
-    //  } 
-    //   BPS_LOG(DEBUG) << "visited" ;
-    //   if( !_vis[_myqueue.front() * -1] ){
-    //     BPS_LOG(DEBUG) << "pop" << _myqueue.front();
-    //     _myqueue.pop();// pop the firt element when the tensor first came. 
-    //   }
-    //   _vis[(*it) -> priority * -1] ++;
-    // }
-/////////
     task = *it;
     if (_is_scheduled) 
     {
@@ -316,7 +285,7 @@ void BytePSScheduledQueue::reportFinish(int size) {
   {
     if(_meetzero) {
          _dooropen = 1;
-          BPS_LOG(DEBUG) << "finished, door open again.";
+          BPS_LOG(INFO) << "finished, door open again.";
        }
   }
   return;
