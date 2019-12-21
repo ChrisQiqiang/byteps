@@ -178,10 +178,10 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
         if(!_meetzero)
         {
             if((*it) -> priority !=  _myqueue.front() && !_vis[(*it) -> priority * -1] && !_myqueue.empty() )continue; 
-            _vis[(*it) -> priority * -1] ++;
             _tensor_part[ (*it) -> priority * -1]++; 
             if(_tensor_part[ (*it) -> priority * -1 ] == (*it) -> total_partnum )_tensor_num++;
             if( (*it) -> priority ==  _myqueue.front() && !_vis[_myqueue.front() * -1])_myqueue.pop();
+             _vis[(*it) -> priority * -1] ++;
         }
         else if(!_dooropen) {//we cannot change the value of tensor_part if door is closed.
           //BPS_LOG(INFO) << "door is closed.";
@@ -191,10 +191,10 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
            BPS_LOG(INFO) << "Tensor name: " << tmp << "   myqueue front: " << _myqueue.front() << "   visible of this element: " << _vis[(*it) -> priority * -1];
            if((*it) -> priority !=  _myqueue.front() && !_vis[(*it) -> priority * -1] && !_myqueue.empty() )continue;
            BPS_LOG(INFO) << "Pass, and dooopen --";
-            _vis[(*it) -> priority * -1] ++;
             _tensor_part[ (*it) -> priority * -1]++; 
             if(_tensor_part[ (*it) -> priority * -1 ] == (*it) -> total_partnum )_tensor_num++;
             if((*it) -> priority ==  _myqueue.front() &&  !_vis[_myqueue.front() * -1] )_myqueue.pop(); 
+            _vis[(*it) -> priority * -1] ++;
             _dooropen=0;
             BPS_LOG(DEBUG) << "PUSH gradient: " << tmp ;
             // BPS_LOG(DEBUG) << "The door has been closed.";
