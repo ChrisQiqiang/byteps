@@ -188,7 +188,9 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
           break;
         }
         else {
+          BPS_LOG(INFO) << "Tensor name: " << tmp << "   myqueue front: " << _myqueue.front() << "   visible of this element: " << _vis[(*it) -> priority * -1];
            if((*it) -> priority !=  _myqueue.front() && !_vis[(*it) -> priority * -1] && !_myqueue.empty() )continue;
+           BPS_LOG(INFO) << "Pass, and dooopen --";
             _tensor_part[ (*it) -> priority * -1]++; 
             if(_tensor_part[ (*it) -> priority * -1 ] == (*it) -> total_partnum )_tensor_num++;
             if((*it) -> priority ==  _myqueue.front() &&  !_vis[_myqueue.front() * -1] )_myqueue.pop();
