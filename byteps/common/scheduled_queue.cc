@@ -288,7 +288,7 @@ void BytePSScheduledQueue::reportFinish(int size) {
   if(_qt == PUSH)
   {
     if(_meetzero) {
-         _dooropen=1
+         _dooropen=1;
          }       
          // BPS_LOG(INFO) << "door open value:" << _dooropen;
   }
