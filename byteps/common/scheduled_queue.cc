@@ -188,18 +188,17 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
           break;
         }
         else {
-           BPS_LOG(INFO) << "Tensor name: " << tmp << "   myqueue front: " << _myqueue.front() << "   visible of this element: " << _vis[(*it) -> priority * -1] << "  size of _sq: " << _sq.size();
+           BPS_LOG(DEBUG) << "Tensor name: " << tmp << "   myqueue front: " << _myqueue.front() << "   visible of this element: " << _vis[(*it) -> priority * -1] << "  size of _sq: " << _sq.size();
            if((*it) -> priority !=  _myqueue.front() && !_vis[(*it) -> priority * -1] && !_myqueue.empty() )continue;
-           BPS_LOG(INFO) << "Pass, and dooopen --";
+           BPS_LOG(DEBUG) << "Pass, and dooopen --";
             _tensor_part[ (*it) -> priority * -1]++; 
             if(_tensor_part[ (*it) -> priority * -1 ] == (*it) -> total_partnum )_tensor_num++;     
             if((*it) -> priority ==  _myqueue.front() &&  !_vis[_myqueue.front() * -1] )_myqueue.pop(); 
             _vis[(*it) -> priority * -1] ++;
-            _dooropen=0;
+            _dooropen--;
             BPS_LOG(DEBUG) << "PUSH gradient: " << tmp ;
             // BPS_LOG(DEBUG) << "The door has been closed.";
         }
-
          BPS_LOG(DEBUG) << "transferred tensor num: " << _tensor_num  << "  empty: " << _myqueue.empty() << " size of myqueue: " << _myqueue.size();
 
         //all push process end in this iteration , then reinitalize varibles.
@@ -207,7 +206,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
         {
           BPS_LOG(DEBUG) << "Clear.";
           _meetzero = 0;
-          _dooropen = 1;
+          _dooropen = 6;
           _doorcount = 0;
           _tensor_num = 0;
           for(int i = 0; i < 160; i++)_tensor_part[i] = 0;
@@ -288,9 +287,10 @@ void BytePSScheduledQueue::reportFinish(int size) {
   if(_qt == PUSH)
   {
     if(_meetzero) {
-         _dooropen=1;
+         if(_dooropen < 6)
+              _dooropen++;
          }       
-         // BPS_LOG(INFO) << "door open value:" << _dooropen;
+         // BPS_LOG(DEBUG) << "door open value:" << _dooropen;
   }
   return;
 }

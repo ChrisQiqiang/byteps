@@ -230,7 +230,7 @@ void BytePSGlobal::Init() {
   joined_thread_cnt = 0;
 
   _initialized = true;
-  BPS_LOG(DEBUG) << "Inited rank=" << _rank << " local_rank=" << _local_rank
+  BPS_LOG(INFO) << "Inited rank=" << _rank << " local_rank=" << _local_rank
                  << " size=" << _size << " local_size=" << _local_size
                  << " worker_id=" << _worker_id;
 
