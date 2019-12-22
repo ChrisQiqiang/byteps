@@ -206,7 +206,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
         {
           BPS_LOG(DEBUG) << "Clear.";
           _meetzero = 0;
-          _dooropen = 6;
+          _dooropen = 11;
           _doorcount = 0;
           _tensor_num = 0;
           for(int i = 0; i < 160; i++)_tensor_part[i] = 0;
@@ -287,7 +287,7 @@ void BytePSScheduledQueue::reportFinish(int size) {
   if(_qt == PUSH)
   {
     if(_meetzero) {
-         if(_dooropen < 6)
+         if(_dooropen < 11)
               _dooropen++;
          }       
          // BPS_LOG(DEBUG) << "door open value:" << _dooropen;
