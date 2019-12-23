@@ -63,21 +63,21 @@ BytePSScheduledQueue::BytePSScheduledQueue(QueueType type) {
       _tensor_num=0;
       for(int i = 11; i >= 0; i--)
       {
-        for(int j = _grad_checkpoint[i]; j <= _middle[i];j++){
-            _myqueue.push(j * -1 );
+        for(int j = _grad_checkpoint[i + 1] - 1; j > _middle[i]; j--){
+            _mystack.push(j * -1 );
             BPS_LOG(DEBUG) << " PUSH element into myqueue: " << j ;
         }
       }
       for(int i = 0 ; i <= 11; i++)
       {
-        for(int j = _middle[i] + 1; j < _grad_checkpoint[i + 1] ; j++){
-            _myqueue.push(j * -1);
+        for(int j = _middle[i] ; j >= _grad_checkpoint[i]; j--){
+            _mystack.push(j * -1);
             BPS_LOG(DEBUG) << " PUSH element into myqueue: " << j ;
         }
       }
       for(int i = 0;i < 160; i++)
       {
-        _vis[i] = 0;
+        // _vis[i] = 0;
         _tensor_part[i] = 0;
       }
       BPS_LOG(DEBUG) << " Done. DOOR IS " << _dooropen ;
@@ -99,10 +99,6 @@ BytePSScheduledQueue::BytePSScheduledQueue(QueueType type) {
 
 void BytePSScheduledQueue::addTask(std::shared_ptr<TensorTableEntry> entry) {
   std::lock_guard<std::mutex> lock(_mutex);
-  //if the entry->tensor_name is the first element of muqueue, else: wait.
-  // while(entry->priority != _myqueue.top());
-  // _myqueue.pop();
-  // //
   _sq.push_back(entry);
   if (_is_scheduled) {
     // TODO: below can be optimized to O(n) using insertion sort
@@ -177,53 +173,59 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
          }
         if(!_meetzero)
         {
-            if((*it) -> priority !=  _myqueue.front() && !_vis[(*it) -> priority * -1] && !_myqueue.empty() )continue; 
-            _tensor_part[ (*it) -> priority * -1]++; 
-            if(_tensor_part[ (*it) -> priority * -1 ] == (*it) -> total_partnum )_tensor_num++;
-            if( (*it) -> priority ==  _myqueue.front() && !_vis[_myqueue.front() * -1])_myqueue.pop();
-             _vis[(*it) -> priority * -1] ++;
+            if(task -> priority !=  _mystack.top())continue; 
+            _tensor_part[ task -> priority * -1]++; 
+            if(_tensor_part[task -> priority * -1 ] == 1 && task -> total_partnum > 1){
+              for(int base = 1; base < task-> total_partnum ; base++)
+                _mystack.push(task -> priority * -1);
+                BPS_LOG(INFO) << "PUSH IN THE PROCESS: " << tmp;
+            }
+            if(_tensor_part[ task -> priority * -1 ] == task -> total_partnum )_tensor_num++;
+            _mystack.pop();
         }
         else if(!_dooropen) {//we cannot change the value of tensor_part if door is closed.
           BPS_LOG(DEBUG) << "door is closed.";
           break;
         }
         else {
-           BPS_LOG(DEBUG) << "Tensor name: " << tmp << "   myqueue front: " << _myqueue.front() << "   visible of this element: " << _vis[(*it) -> priority * -1] << "  size of _sq: " << _sq.size();
-           if((*it) -> priority !=  _myqueue.front() && !_vis[(*it) -> priority * -1] && !_myqueue.empty() )continue;
+           BPS_LOG(DEBUG) << "Tensor name: " << tmp << "   myqueue top: " << _mystack.top()  << "  size of _sq: " << _sq.size();    
+           if(task -> priority !=  _mystack.top())continue; 
            BPS_LOG(DEBUG) << "Pass, and dooopen --";
-            _tensor_part[ (*it) -> priority * -1]++; 
-            if(_tensor_part[ (*it) -> priority * -1 ] == (*it) -> total_partnum )_tensor_num++;     
-            if((*it) -> priority ==  _myqueue.front() &&  !_vis[_myqueue.front() * -1] )_myqueue.pop(); 
-            _vis[(*it) -> priority * -1] ++;
+            _tensor_part[ task -> priority * -1]++; 
+            if(_tensor_part[task -> priority * -1 ] == 1 && task -> total_partnum > 1){
+              for(int base = 1; base < task-> total_partnum ; base++)
+                _mystack.push(task -> priority * -1);
+                BPS_LOG(INFO) << "PUSH IN THE PROCESS: " << tmp;
+            }
+            if(_tensor_part[ task -> priority * -1 ] == task -> total_partnum )_tensor_num++;
+            _mystack.pop();
             _dooropen--;
             BPS_LOG(DEBUG) << "PUSH gradient: " << tmp ;
             // BPS_LOG(DEBUG) << "The door has been closed.";
         }
-         BPS_LOG(DEBUG) << "transferred tensor num: " << _tensor_num  << "  empty: " << _myqueue.empty() << " size of myqueue: " << _myqueue.size();
+         BPS_LOG(DEBUG) << "transferred tensor num: " << _tensor_num  << "  empty: " << _mystack.empty() << " size of myqueue: " << _mystack.size();
 
         //all push process end in this iteration , then reinitalize varibles.
-        if(_tensor_num == 157 && _myqueue.empty())
+        if(_tensor_num == 157 && _mystack.empty())
         {
           BPS_LOG(DEBUG) << "Clear.";
           _meetzero = 0;
           _dooropen = 11;
-          _doorcount = 0;
+          // _doorcount = 0;
           _tensor_num = 0;
           for(int i = 0; i < 160; i++)_tensor_part[i] = 0;
-          for(int i = 0;i < 160; i++) _vis[i] = 0;  
+          // for(int i = 0;i < 160; i++) _vis[i] = 0;  
           for(int i = 11; i >= 0; i--)
           {
-            for(int j = _grad_checkpoint[i]; j <= _middle[i];j++)
-            {
-                _myqueue.push(j * -1 );
+            for(int j = _grad_checkpoint[i + 1] - 1; j > _middle[i]; j--){
+                _mystack.push(j * -1 );
                 BPS_LOG(DEBUG) << " PUSH element into myqueue: " << j ;
             }
           }
           for(int i = 0 ; i <= 11; i++)
           {
-            for(int j = _middle[i] + 1; j < _grad_checkpoint[i + 1] ; j++)
-            {
-                _myqueue.push(j * -1);
+            for(int j = _middle[i] ; j >= _grad_checkpoint[i]; j--){
+                _mystack.push(j * -1);
                 BPS_LOG(DEBUG) << " PUSH element into myqueue: " << j ;
             }
           }
