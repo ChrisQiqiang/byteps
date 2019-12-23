@@ -174,7 +174,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
         if(!_meetzero)
         {
             if(task -> priority !=  _mystack.top())continue; 
-            BSP_LOG(INFO) << "PUSH GRADIENT: " << tmp;
+            BPS_LOG(INFO) << "PUSH GRADIENT: " << tmp;
             _tensor_part[ task -> priority * -1]++; 
             if(_tensor_part[task -> priority * -1 ] == 1 && task -> total_partnum > 1){
               for(int base = 1; base < task-> total_partnum ; base++)
@@ -191,7 +191,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
         else {
            BPS_LOG(DEBUG) << "Tensor name: " << tmp << "   myqueue top: " << _mystack.top()  << "  size of _sq: " << _sq.size();    
            if(task -> priority !=  _mystack.top())continue; 
-           BSP_LOG(INFO) << "PUSH GRADIENT: " << tmp;
+           BPS_LOG(INFO) << "PUSH GRADIENT: " << tmp;
            BPS_LOG(DEBUG) << "Pass, and dooopen --";
             _tensor_part[ task -> priority * -1]++; 
             if(_tensor_part[task -> priority * -1 ] == 1 && task -> total_partnum > 1){
