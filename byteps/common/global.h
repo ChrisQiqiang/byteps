@@ -99,6 +99,7 @@ class BytePSGlobal {
   static ReadyTable* GetPcieReduceTable() { return _pcie_reduce_table; }
   static ReadyTable* GetBroadcastTable() { return _broadcast_table; }
   static ReadyTable* GetPushTable() { return _push_table; }
+  static ReadyTable* GetPullTable() { return _pull_table; }
 
   // reduce strategies
   static bool IsUsingReduce() { return _is_using_reduce; }
@@ -169,6 +170,7 @@ class BytePSGlobal {
   static ReadyTable* _pcie_reduce_table;
   static ReadyTable* _broadcast_table;
   static ReadyTable* _push_table;
+  static ReadyTable* _pull_table;
 
   // (key, ready_signal_count) pair, only valid for non-root device
   static ReadyTable* _copy_table;

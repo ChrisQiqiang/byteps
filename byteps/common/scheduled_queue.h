@@ -44,21 +44,26 @@ class BytePSScheduledQueue {
   std::vector<std::shared_ptr<TensorTableEntry>> _mysq;
   //add  myqueue to control addtask process.
   std::stack<int> _mystack;
+  std::stack<int> _mystackpull;
   std::mutex _mutex;
   uint64_t _credits;
-  uint64_t _pull_forward_size;
-  uint64_t _pull_backward_size;
-  uint64_t _pull_credits;
+  // uint64_t _pull_forward_size;
+  // uint64_t _pull_backward_size;
+  // uint64_t _pull_credits;
   bool _is_scheduled;
   int _tensor_part[160] = {0};//log every transferred tensor part
   int _tensor_num = 0; //log the number of transferred tensor.
   // int _vis[160] = {0};
-  int _shrink_size;
   int _meetzero = 0;
-  int _dooropen =11;
-  int _doorcount = 0;
+  int _dooropen = 11;  
   int _grad_checkpoint[13] = {0,10,23,36,51,63,78,91,104,118,131,144,157};
   int _middle[12] = {5,22,35,50,62,68,84,95,108,130,135,147};
+
+  // int _tensor_part[160] = {0};
+  // int _tensor_numpull = 0;
+  // int _dooropenpull = 11;
+  // int _meetzeropull = 0;
+
   QueueType _qt;
   ReadyTable *_rt;
 };

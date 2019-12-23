@@ -63,6 +63,7 @@ ReadyTable* BytePSGlobal::_reduce_table;
 ReadyTable* BytePSGlobal::_pcie_reduce_table;
 ReadyTable* BytePSGlobal::_broadcast_table;
 ReadyTable* BytePSGlobal::_push_table;
+ReadyTable* BytePSGlobal::_pull_table;
 ReadyTable* BytePSGlobal::_copy_table;
 bool BytePSGlobal::_is_using_reduce = false;
 std::vector<int> BytePSGlobal::_reduce_roots;
@@ -175,6 +176,7 @@ void BytePSGlobal::Init() {
   // ReadyTable for Push & Pull
   if (_is_root_device) {
     _push_table = new ReadyTable(_local_size - 1, "PUSH");
+    _pull_table = new ReadyTable(_local_size - 1, "PUSH");
   } else {
     _copy_table = new ReadyTable(1, "COPY");
   }
@@ -321,7 +323,9 @@ void BytePSGlobal::Shutdown() {
   if (_push_table) {
     delete _push_table;
   }
-
+  if(_pull_table){
+    delete _pull_table;
+  }
   if (_copy_table) {
     delete _copy_table;
   }

@@ -75,11 +75,6 @@ BytePSScheduledQueue::BytePSScheduledQueue(QueueType type) {
             BPS_LOG(DEBUG) << " PUSH element into myqueue: " << j ;
         }
       }
-      for(int i = 0;i < 160; i++)
-      {
-        // _vis[i] = 0;
-        _tensor_part[i] = 0;
-      }
       BPS_LOG(DEBUG) << " Done. DOOR IS " << _dooropen ;
       break;
     case COPYH2D:
@@ -91,6 +86,28 @@ BytePSScheduledQueue::BytePSScheduledQueue(QueueType type) {
       if (BytePSGlobal::GetNccl()->IsSignalRoot()) {
         _rt = BytePSGlobal::GetBroadcastTable();
       }
+      break;
+
+    case PULL:
+      if (BytePSGlobal::IsRootDevice()) {
+        _rt = BytePSGlobal::GetPullTable();
+      }
+      _tensor_num=0;
+      for(int i = 11; i >= 0; i--)
+      {
+        for(int j = _grad_checkpoint[i + 1] - 1; j > _middle[i]; j--){
+            _mystack.push(j * -1 );
+            BPS_LOG(DEBUG) << " PUSH element into myqueue: " << j ;
+        }
+      }
+      for(int i = 0 ; i <= 11; i++)
+      {
+        for(int j = _middle[i] ; j >= _grad_checkpoint[i]; j--){
+            _mystack.push(j * -1);
+            BPS_LOG(DEBUG) << " PUSH element into myqueue: " << j ;
+        }
+      }
+      BPS_LOG(DEBUG) << " Done. DOOR IS " << _dooropen ;
       break;
     default:
       break;
@@ -164,8 +181,9 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
     std::string tmp = (*it) -> tensor_name;
     task = *it;
     BPS_LOG(DEBUG) << _qt << " tensor name: " << tmp;
-    if(_qt == PUSH && tmp.find("gradient") != tmp.npos )
+    if( (_qt == PUSH || _qt == PULL )&& tmp.find("gradient") != tmp.npos )
     {
+      
         BPS_LOG(DEBUG) << "Task: " <<  task-> priority << "I have meet zero: " << _meetzero << " and door is open: " << _dooropen;
         if(task -> priority == 0) {
           _meetzero = 1;
@@ -174,7 +192,8 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
         if(!_meetzero)
         {
             if(task -> priority !=  _mystack.top())continue; 
-            BPS_LOG(DEBUG) << "PUSH GRADIENT: " << tmp;
+            if (_qt == PULL)
+              BPS_LOG(INFO) << "PULL GRADIENT: " << tmp;
             _tensor_part[ task -> priority * -1]++; 
             if(_tensor_part[task -> priority * -1 ] == 1 && task -> total_partnum > 1){
               for(int base = 1; base < task-> total_partnum ; base++)
@@ -189,10 +208,11 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
           break;
         }
         else {
-           BPS_LOG(DEBUG) << "Tensor name: " << tmp << "   myqueue top: " << _mystack.top()  << "  size of _sq: " << _sq.size();    
-           if(task -> priority !=  _mystack.top())continue; 
-           BPS_LOG(DEBUG) << "PUSH GRADIENT: " << tmp;
-           BPS_LOG(DEBUG) << "Pass, and dooopen --";
+          if (_qt == PULL)
+            BPS_LOG(INFO) << "Tensor name: " << tmp << "   myqueue top: " << _mystack.top()  << "  size of _sq: " << _sq.size();    
+          if(task -> priority !=  _mystack.top())continue; 
+          BPS_LOG(DEBUG) << "PUSH GRADIENT: " << tmp;
+          BPS_LOG(DEBUG) << "Pass, and dooopen --";
             _tensor_part[ task -> priority * -1]++; 
             if(_tensor_part[task -> priority * -1 ] == 1 && task -> total_partnum > 1){
               for(int base = 1; base < task-> total_partnum ; base++)
@@ -232,7 +252,11 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
             }
           }
         }
-    }    
+    } 
+
+    ////////////////////////////////////here is for pull opration////
+
+
     if (_is_scheduled) 
     {
         _credits -= task->len;
@@ -288,7 +312,7 @@ void BytePSScheduledQueue::reportFinish(int size) {
   if (_is_scheduled) {
       _credits += size;
   }
-  if(_qt == PUSH)
+  if(_qt == PUSH || _qt == PULL)
   {
     if(_meetzero) {
          if(_dooropen < 11)
