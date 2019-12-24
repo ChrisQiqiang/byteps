@@ -184,7 +184,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
         
         _pointer--;
         // Size = Bandwidth * exectime , size decreased by the pop operation of mystack.
-        BPS_LOG(INFO) << "Task: " <<  task-> priority << "I have meet zero: " << _meetzero << " and door is open: " << _dooropen;
+       // BPS_LOG(INFO) << "Task: " <<  task-> priority << "I have meet zero: " << _meetzero << " and door is open: " << _dooropen;
         if(task -> priority == 0) {
           _meetzero = 1;
          BPS_LOG(INFO) << "Meet zero.";
@@ -201,7 +201,8 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
             }
             else{
               _dequeue = 0;
-              continue;  
+              BPS_LOG(INFO) << "No left size. Waiting for next gradient block." 
+              break;  
             }      
         }
         else if(!_dooropen) {//we cannot change the value of tensor_part if door is closed.
