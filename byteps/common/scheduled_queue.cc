@@ -60,6 +60,7 @@ BytePSScheduledQueue::BytePSScheduledQueue(QueueType type) {
       if (BytePSGlobal::IsRootDevice()) {
         _rt = BytePSGlobal::GetPushTable();
       }
+      _mystack.push(-157);
       break;
     case COPYH2D:
       if (!BytePSGlobal::IsRootDevice()) {
@@ -76,6 +77,7 @@ BytePSScheduledQueue::BytePSScheduledQueue(QueueType type) {
       if (BytePSGlobal::IsRootDevice()) {
         _rt = BytePSGlobal::GetPullTable();
       }
+      _mystack.push(-157);
       _sizepointer=1;
       break;
     default:
@@ -155,7 +157,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
     {
           /////first  enqueue as the gradient block coming, then dequeue dynamically.
         if(_dequeue != 1){
-           BPS_LOG(INFO) << "ENQUE elements:";
+          //  BPS_LOG(INFO) << "ENQUE elements:";
             if(_restpart){
               if(task -> priority == _mystack.top()){
                
@@ -165,6 +167,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
               }
             }
             else{
+              BPS_LOG(INFO) << "task priority: " << task -> priority << "  _mystack top: " << _mystack.top();
               if(task -> priority == _mystack.top() + 1 && task -> priority  < -1 * _grad_checkpoint[_pointer - 1]){
                 _restpart = task -> total_partnum - 1;
                 _mystack.push(task -> priority);
@@ -216,7 +219,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
             // BPS_LOG(INFO) << "The door has been closed.";
         }
         //  BPS_LOG(INFO) << "transferred tensor num: " << _tensor_num  << "  empty: " << _mystack.empty() << " size of myqueue: " << _mystack.size();
-        if(_mystack.empty())
+        if(_mystack.top() == -157)
         {
           BPS_LOG(INFO) << "Clear.";
           _dequeue = 0;
