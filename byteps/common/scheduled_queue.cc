@@ -76,6 +76,7 @@ BytePSScheduledQueue::BytePSScheduledQueue(QueueType type) {
       if (BytePSGlobal::IsRootDevice()) {
         _rt = BytePSGlobal::GetPullTable();
       }
+      _sizepointer=1;
       break;
     default:
       break;
@@ -171,7 +172,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
               }
               if(task -> priority * -1 == _grad_checkpoint[_pointer - 1] + 1 && !_restpart){
                   _dequeue = 1;
-                  dynamic_size = _execution[_sizepointer++];
+                  dynamic_size = _execution[_sizepointer++];               
                   BPS_LOG(DEBUG) << "enqueue operation of one stage is over.";
                   ///////////////////////////initialize dynamic size of this gradient stage.////////////////////////////
               }
@@ -221,7 +222,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
           _dequeue = 0;
           _restpart = 0;
           _pointer = 12;
-          _sizepointer = 0;
+         _sizepointer =  _qt == PUSH ? 0:1;
         }
         task->ready_event = nullptr;
         // Add for profiling communication traces
