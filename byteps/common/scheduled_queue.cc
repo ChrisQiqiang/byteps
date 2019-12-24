@@ -180,7 +180,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
                   BPS_LOG(INFO) << "enqueue operation of one stage is over." << "_sizepointer:" << _sizepointer;
                   ///////////////////////////initialize dynamic size of this gradient stage.////////////////////////////
               }
-              BPS_LOG(INFO) << "Position 4:"  << "_sq size is: "<< _sq.size();;
+              BPS_LOG(INFO) << "Position 4:"  << "_sq size is: "<< _sq.size();
             }
             continue;
         }
