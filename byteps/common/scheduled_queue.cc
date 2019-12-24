@@ -168,14 +168,14 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
             }
             else{
               // BPS_LOG(INFO) << "task priority: " << task -> priority << "  _mystack top: " << _mystack.top();
-              if((task -> priority == (-1 * _grad_checkpoint[_pointer - 1] + 1) || task -> priority == _mystack.top() + 1) \
+              if((task -> priority == (-1 * _grad_checkpoint[_pointer - 1] - 1) || task -> priority == _mystack.top() + 1) \
                   && task -> priority  < -1 * _grad_checkpoint[_pointer - 1]){
                 _restpart = task -> total_partnum - 1;
                 _mystack.push(task -> priority);
                 // _maxium = _maxium >= task -> priority ? _maxium : task -> priority;
                 BPS_LOG(INFO) << "ENQUEUE1 element: " << task -> priority << "The rest part num of this priority tensor is: " << _restpart;
               }
-              if(task -> priority * -1 == _grad_checkpoint[_pointer - 1] + 1 && task -> priority == _mystack.top() && !_restpart){
+              if(!_mystack.empty() &&  _mystack.top() * -1 == _grad_checkpoint[_pointer - 1] + 1  && !_restpart){
                   _dequeue = 1;
                   dynamic_size = _execution[_sizepointer++];               
                   BPS_LOG(INFO) << "enqueue operation of one stage is over." << "_sizepointer:" << _sizepointer;
