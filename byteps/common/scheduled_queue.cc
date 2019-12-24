@@ -167,6 +167,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
               }
               if(task -> priority * -1 == _grad_checkpoint[_pointer - 1] + 1 && !restpart){
                   _dequeue = 1;
+                  dynamic_size = 20000000;
                   ///////////////////////////initialize dynamic size of this gradient stage.////////////////////////////
               }
                 
