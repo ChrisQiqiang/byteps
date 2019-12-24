@@ -215,7 +215,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
             BPS_LOG(DEBUG) << "PUSH gradient: " << tmp ;
             // BPS_LOG(DEBUG) << "The door has been closed.";
         }
-         BPS_LOG(DEBUG) << "transferred tensor num: " << _tensor_num  << "  empty: " << _mystack.empty() << " size of myqueue: " << _mystack.size();
+        //  BPS_LOG(DEBUG) << "transferred tensor num: " << _tensor_num  << "  empty: " << _mystack.empty() << " size of myqueue: " << _mystack.size();
         //all push process end in this iteration , then reinitalize varibles.
         task->ready_event = nullptr;
         // Add for profiling communication traces
