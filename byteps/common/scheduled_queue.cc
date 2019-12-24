@@ -157,19 +157,23 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
     {
           /////first  enqueue as the gradient block coming, then dequeue dynamically.
         if(_dequeue != 1){
-          //  BPS_LOG(INFO) << "ENQUE elements:";
+            if(task -> priority < _maxium){
+              BPS_LOG(INFO) << "wating......." << "  TASK:" << task ->tensor_name << "  _maxium" << _maxium;
+              break;
+            }
             if(_restpart){
               if(task -> priority == _mystack.top()){
                 _mystack.push(task -> priority);
                 _restpart--;
                 BPS_LOG(INFO) << "ENQUEUE2 element: " << task -> priority << "The rest part num of this priority tensor is: " << _restpart;
-              }
+              }            
             }
             else{
               // BPS_LOG(INFO) << "task priority: " << task -> priority << "  _mystack top: " << _mystack.top();
               if(task -> priority == _mystack.top() + 1 && task -> priority  < -1 * _grad_checkpoint[_pointer - 1]){
                 _restpart = task -> total_partnum - 1;
                 _mystack.push(task -> priority);
+                _maxium = _maxium > task -> priority ? _maxium : task -> priority;
                 BPS_LOG(INFO) << "ENQUEUE1 element: " << task -> priority << "The rest part num of this priority tensor is: " << _restpart;
               }
               if(task -> priority * -1 == _grad_checkpoint[_pointer - 1] + 1 && task -> priority == _mystack.top() && !_restpart){
