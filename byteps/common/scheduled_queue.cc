@@ -160,14 +160,13 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
           //  BPS_LOG(INFO) << "ENQUE elements:";
             if(_restpart){
               if(task -> priority == _mystack.top()){
-               
                 _mystack.push(task -> priority);
                 _restpart--;
                 BPS_LOG(INFO) << "ENQUEUE2 element: " << task -> priority << "The rest part num of this priority tensor is: " << _restpart;
               }
             }
             else{
-              BPS_LOG(INFO) << "task priority: " << task -> priority << "  _mystack top: " << _mystack.top();
+              // BPS_LOG(INFO) << "task priority: " << task -> priority << "  _mystack top: " << _mystack.top();
               if(task -> priority == _mystack.top() + 1 && task -> priority  < -1 * _grad_checkpoint[_pointer - 1]){
                 _restpart = task -> total_partnum - 1;
                 _mystack.push(task -> priority);
@@ -219,7 +218,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
             // BPS_LOG(INFO) << "The door has been closed.";
         }
         //  BPS_LOG(INFO) << "transferred tensor num: " << _tensor_num  << "  empty: " << _mystack.empty() << " size of myqueue: " << _mystack.size();
-        if(_mystack.top() == -157)
+        if(_pointer == 0  && _mystack.top() == -157)
         {
           BPS_LOG(INFO) << "Clear.";
           _dequeue = 0;
