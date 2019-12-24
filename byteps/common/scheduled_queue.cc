@@ -170,12 +170,12 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
               // if(task -> priority == -1 * _grad_checkpoint[_pointer])_stagestart = 1;
               // bool intobegin = _stagestart && !_stageproc && task -> priority == -1 * _grad_checkpoint[_pointer];
               // bool intoing = _stageproc && task -> priority == _mystack.top() + 1 ;
-              if((( _stagestart  && task -> priority == -1 * _grad_checkpoint[_pointer])|| task -> priority == _mystack.top() + 1) \
-                  && task -> priority  < -1 * _grad_checkpoint[_pointer - 1] \
-                  && task -> priority >= -1 * _grad_checkpoint[_pointer]){
+              if(((task -> priority == -1 * _grad_checkpoint[_pointer]) \
+                  || ( task -> priority > -1 * _grad_checkpoint[_pointer] && task -> priority == _mystack.top() + 1) ) \
+                  && task -> priority  < -1 * _grad_checkpoint[_pointer - 1]){
                     BPS_LOG(INFO) << "Position 2.5";
-                if(_stagestart  && task -> priority == -1 * _grad_checkpoint[_pointer]){
-                  _stagestart = 0;
+                // if(_stagestart  && task -> priority == -1 * _grad_checkpoint[_pointer]){
+                //   _stagestart = 0;
                   BPS_LOG(INFO) << "stage start";
                   // _stageproc = 1;
                 }
