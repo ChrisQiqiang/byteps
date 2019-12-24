@@ -168,7 +168,8 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
             }
             else{
               // BPS_LOG(INFO) << "task priority: " << task -> priority << "  _mystack top: " << _mystack.top();
-              if((task -> priority == _mystack.top() + 1 || task -> priority == (-1 * _grad_checkpoint[_pointer - 1] + 1) && task -> priority  < -1 * _grad_checkpoint[_pointer - 1]){
+              if((task -> priority == _mystack.top() + 1 || task -> priority == (-1 * _grad_checkpoint[_pointer - 1] + 1) ) \
+                  && task -> priority  < -1 * _grad_checkpoint[_pointer - 1]){
                 _restpart = task -> total_partnum - 1;
                 _mystack.push(task -> priority);
                 // _maxium = _maxium >= task -> priority ? _maxium : task -> priority;
