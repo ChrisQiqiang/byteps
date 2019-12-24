@@ -60,22 +60,6 @@ BytePSScheduledQueue::BytePSScheduledQueue(QueueType type) {
       if (BytePSGlobal::IsRootDevice()) {
         _rt = BytePSGlobal::GetPushTable();
       }
-      _tensor_num=0;
-      for(int i = 11; i >= 0; i--)
-      {
-        for(int j = _grad_checkpoint[i + 1] - 1; j > _middle[i]; j--){
-            _mystack.push(j * -1 );
-            BPS_LOG(DEBUG) << " PUSH element into myqueue: " << j ;
-        }
-      }
-      for(int i = 0 ; i <= 11; i++)
-      {
-        for(int j = _middle[i] ; j >= _grad_checkpoint[i]; j--){
-            _mystack.push(j * -1);
-            BPS_LOG(DEBUG) << " PUSH element into myqueue: " << j ;
-        }
-      }
-      BPS_LOG(DEBUG) << " Done. DOOR IS " << _dooropen ;
       break;
     case COPYH2D:
       if (!BytePSGlobal::IsRootDevice()) {
@@ -92,22 +76,6 @@ BytePSScheduledQueue::BytePSScheduledQueue(QueueType type) {
       if (BytePSGlobal::IsRootDevice()) {
         _rt = BytePSGlobal::GetPullTable();
       }
-      _tensor_num=0;
-      for(int i = 11; i >= 0; i--)
-      {
-        for(int j = _grad_checkpoint[i + 1] - 1; j > _middle[i]; j--){
-            _mystack.push(j * -1 );
-            BPS_LOG(DEBUG) << " PUSH element into myqueue: " << j ;
-        }
-      }
-      for(int i = 0 ; i <= 11; i++)
-      {
-        for(int j = _middle[i] ; j >= _grad_checkpoint[i]; j--){
-            _mystack.push(j * -1);
-            BPS_LOG(DEBUG) << " PUSH element into myqueue: " << j ;
-        }
-      }
-      BPS_LOG(DEBUG) << " Done. DOOR IS " << _dooropen ;
       break;
     default:
       break;
@@ -181,9 +149,40 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
     std::string tmp = (*it) -> tensor_name;
     task = *it;
     BPS_LOG(DEBUG) << _qt << " tensor name: " << tmp;
+
     if( (_qt == PUSH || _qt == PULL )&& tmp.find("gradient") != tmp.npos )
     {
-      
+          /////first  enqueue as the gradient block coming, then dequeue dynamically.
+        if(_dequeue != 1){
+            if(restpart){
+              if(task -> priority == _mystack.top()){
+                _mystack.push(task -> priority);
+                restpart--;
+              }
+            }
+            else{
+              if(task -> priority == _mystack.top() + 1 && task -> priority  < -1 * _grad_checkpoint[_pointer - 1]){
+                restpart = task -> total_partnum - 1;
+                _mystack.push(task -> priority);
+              }
+              if(task -> priority * -1 == _grad_checkpoint[_pointer - 1] + 1 && !restpart){
+                  _dequeue = 1;
+                  ///////////////////////////initialize dynamic size of this gradient stage.////////////////////////////
+              }
+                
+            }
+            continue;
+        }
+        
+        _pointer--;
+        if(_mystack.empty())
+        {
+          BPS_LOG(DEBUG) << "Clear.";
+          int _dequeue = 0;
+          int _restpart = 0;
+          int _pointer = 12;
+        }
+        // Size = Bandwidth * exectime , size decreased by the pop operation of mystack.
         BPS_LOG(DEBUG) << "Task: " <<  task-> priority << "I have meet zero: " << _meetzero << " and door is open: " << _dooropen;
         if(task -> priority == 0) {
           _meetzero = 1;
@@ -192,71 +191,36 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
         if(!_meetzero)
         {
             if(task -> priority !=  _mystack.top())continue; 
-            if (_qt == PULL)
-              BPS_LOG(DEBUG) << "PULL GRADIENT: " << tmp;
-            _tensor_part[ task -> priority * -1]++; 
-            if(_tensor_part[task -> priority * -1 ] == 1 && task -> total_partnum > 1){
-              for(int base = 1; base < task-> total_partnum ; base++)
-                _mystack.push(task -> priority);//the values in the stack and priority are both negative
-                BPS_LOG(DEBUG) << "PUSH elements into mystack  IN THE PROCESS: " << tmp;
+            if(dynamic_size > task -> len){
+              dynamic_size -= task -> len;
+              _sq.erase(it);
+              _mystack.pop();
             }
-            if(_tensor_part[ task -> priority * -1 ] == task -> total_partnum )_tensor_num++;
-            _mystack.pop();
+            else{
+              _dequeue = 0;
+              continue;  
+            }      
         }
         else if(!_dooropen) {//we cannot change the value of tensor_part if door is closed.
           BPS_LOG(DEBUG) << "door is closed.";
           break;
         }
-        else {
-          if (_qt == PULL)
-            BPS_LOG(DEBUG) << "Tensor name: " << tmp << "   myqueue top: " << _mystack.top()  << "  size of _sq: " << _sq.size();    
-          if(task -> priority !=  _mystack.top())continue; 
-          BPS_LOG(DEBUG) << "PUSH GRADIENT: " << tmp;
-          BPS_LOG(DEBUG) << "Pass, and dooopen --";
-            _tensor_part[ task -> priority * -1]++; 
-            if(_tensor_part[task -> priority * -1 ] == 1 && task -> total_partnum > 1){
-              for(int base = 1; base < task-> total_partnum ; base++)
-                _mystack.push(task -> priority);
-                BPS_LOG(DEBUG) << "PUSH elements into mystack IN THE PROCESS: " << tmp;
-            }
-            if(_tensor_part[ task -> priority * -1 ] == task -> total_partnum )_tensor_num++;
-            _mystack.pop();
+        else {         
+          if(task -> priority !=  _mystack.top())continue;
             _dooropen--;
+            // dynamic_size -= task -> len;  // if meetzero, dynamic size is no meaning.
+            _sq.erase(it);
+            _mystack.pop();
             BPS_LOG(DEBUG) << "PUSH gradient: " << tmp ;
             // BPS_LOG(DEBUG) << "The door has been closed.";
         }
          BPS_LOG(DEBUG) << "transferred tensor num: " << _tensor_num  << "  empty: " << _mystack.empty() << " size of myqueue: " << _mystack.size();
-
         //all push process end in this iteration , then reinitalize varibles.
-        if(_tensor_num == 157 && _mystack.empty())
-        {
-          BPS_LOG(DEBUG) << "Clear.";
-          _meetzero = 0;
-          _dooropen = 11;
-          // _doorcount = 0;
-          _tensor_num = 0;
-          for(int i = 0; i < 160; i++)_tensor_part[i] = 0;
-          // for(int i = 0;i < 160; i++) _vis[i] = 0;  
-          for(int i = 11; i >= 0; i--)
-          {
-            for(int j = _grad_checkpoint[i + 1] - 1; j > _middle[i]; j--){
-                _mystack.push(j * -1 );
-                BPS_LOG(DEBUG) << " PUSH element into myqueue: " << j ;
-            }
-          }
-          for(int i = 0 ; i <= 11; i++)
-          {
-            for(int j = _middle[i] ; j >= _grad_checkpoint[i]; j--){
-                _mystack.push(j * -1);
-                BPS_LOG(DEBUG) << " PUSH element into myqueue: " << j ;
-            }
-          }
-        }
+        task->ready_event = nullptr;
+        // Add for profiling communication traces
+        recorderTs(task);
+        return task;
     } 
-
-    ////////////////////////////////////here is for pull opration////
-
-
     if (_is_scheduled) 
     {
         _credits -= task->len;
