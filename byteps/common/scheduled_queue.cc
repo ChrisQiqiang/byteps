@@ -149,13 +149,13 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
     }
     std::string tmp = (*it) -> tensor_name;
     task = *it;
-   // BPS_LOG(INFO) << _qt << " tensor name: " << tmp;
+  //  BPS_LOG(INFO) << _qt << " tensor name: " << tmp;
 
     if( (_qt == PUSH || _qt == PULL )&& tmp.find("gradient") != tmp.npos )
     {
           /////first  enqueue as the gradient block coming, then dequeue dynamically.
         if(_dequeue != 1){
-
+            BPS_LOG(INFO) << "Position 1";
             if(_restpart){
               if(task -> priority == _mystack.top()){
                 _mystack.push(task -> priority);
@@ -164,6 +164,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
               }            
             }
             else{
+              BPS_LOG(INFO) << "Position 2";
               // BPS_LOG(INFO) << "task priority: " << task -> priority << "  _mystack top: " << _mystack.top();
               if((( _stagestart && task -> priority == -1 * _grad_checkpoint[_pointer])|| task -> priority == _mystack.top() + 1) \
                   && task -> priority  < -1 * _grad_checkpoint[_pointer - 1]){
@@ -172,18 +173,20 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
                 _mystack.push(task -> priority);
                 BPS_LOG(INFO) << "ENQUEUE1 element: " << task -> priority << "The rest part num of this priority tensor is: " << _restpart;
               }
+              BPS_LOG(INFO) << "Position 3";
               if(!_mystack.empty() &&  _mystack.top() * -1 == _grad_checkpoint[_pointer - 1] + 1  && !_restpart){
                   _dequeue = 1;
-                  _stagestart = 1;
                   dynamic_size = _execution[_sizepointer++];               
                   BPS_LOG(INFO) << "enqueue operation of one stage is over." << "_sizepointer:" << _sizepointer;
                   ///////////////////////////initialize dynamic size of this gradient stage.////////////////////////////
               }
+              BPS_LOG(INFO) << "Position 4:"  << "_sq size is: "<< _sq.size();;
             }
             continue;
         }
         
         _pointer--;
+        _stagestart = 1;
         // Size = Bandwidth * exectime , size decreased by the pop operation of mystack.
        // BPS_LOG(INFO) << "Task: " <<  task-> priority << "I have meet zero: " << _meetzero << " and door is open: " << _dooropen;
         if(task -> priority == 0) {
