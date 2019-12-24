@@ -58,10 +58,12 @@ class BytePSScheduledQueue {
   int _dooropen = 11;  
   // int _grad_checkpoint[13] = {0,10,23,36,51,63,78,91,104,118,131,144,157};
   int _grad_checkpoint[13] = {-1,9,22,35,50,62,77,90,103,117,130,143,156};
+  int _execution[12] = {21700000,23800000,13400000,15400000,21300000,27400000,22500000,32900000,45800000,38900000,29500000,20000000};
+  int _sizepointer = 0;
   int _dequeue = 0;
   int _restpart = 0;
   int _pointer = 11;
-  int dynamic_size;
+  int dynamic_size ;
   // int _middle[12] = {5,22,35,50,62,68,84,95,108,130,135,147};
   // int _middle[12] = {5,16,28,40,55,65,80,93,106,120,135,147};
 
