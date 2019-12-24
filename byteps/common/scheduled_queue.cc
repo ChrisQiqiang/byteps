@@ -155,10 +155,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
     {
           /////first  enqueue as the gradient block coming, then dequeue dynamically.
         if(_dequeue != 1){
-            // if(task -> priority < _maxium){
-            //   BPS_LOG(INFO) << "wating......." << "  TASK:" << task ->tensor_name << "  _maxium" << _maxium ;
-            //   continue;
-            // }
+
             if(_restpart){
               if(task -> priority == _mystack.top()){
                 _mystack.push(task -> priority);
@@ -168,15 +165,16 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
             }
             else{
               // BPS_LOG(INFO) << "task priority: " << task -> priority << "  _mystack top: " << _mystack.top();
-              if((task -> priority == (-1 * _grad_checkpoint[_pointer]) || task -> priority == _mystack.top() + 1) \
+              if((( _stagestart && task -> priority == -1 * _grad_checkpoint[_pointer])|| task -> priority == _mystack.top() + 1) \
                   && task -> priority  < -1 * _grad_checkpoint[_pointer - 1]){
+                if(_stagestart && task -> priority == -1 * _grad_checkpoint[_pointer])_stagestart = 0;
                 _restpart = task -> total_partnum - 1;
                 _mystack.push(task -> priority);
-                // _maxium = _maxium >= task -> priority ? _maxium : task -> priority;
                 BPS_LOG(INFO) << "ENQUEUE1 element: " << task -> priority << "The rest part num of this priority tensor is: " << _restpart;
               }
               if(!_mystack.empty() &&  _mystack.top() * -1 == _grad_checkpoint[_pointer - 1] + 1  && !_restpart){
                   _dequeue = 1;
+                  _stagestart = 1;
                   dynamic_size = _execution[_sizepointer++];               
                   BPS_LOG(INFO) << "enqueue operation of one stage is over." << "_sizepointer:" << _sizepointer;
                   ///////////////////////////initialize dynamic size of this gradient stage.////////////////////////////
