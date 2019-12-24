@@ -156,6 +156,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
           /////first  enqueue as the gradient block coming, then dequeue dynamically.
         if(_dequeue != 1){
             BPS_LOG(INFO) << "Position 1";
+            
             if(_restpart){
               if(task -> priority == _mystack.top()){
                 _mystack.push(task -> priority);
@@ -166,9 +167,18 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
             else{
               BPS_LOG(INFO) << "Position 2";
               // BPS_LOG(INFO) << "task priority: " << task -> priority << "  _mystack top: " << _mystack.top();
-              if((( _stagestart && task -> priority == -1 * _grad_checkpoint[_pointer])|| task -> priority == _mystack.top() + 1) \
-                  && task -> priority  < -1 * _grad_checkpoint[_pointer - 1]){
-                if(_stagestart && task -> priority == -1 * _grad_checkpoint[_pointer])_stagestart = 0;
+              // if(task -> priority == -1 * _grad_checkpoint[_pointer])_stagestart = 1;
+              // bool intobegin = _stagestart && !_stageproc && task -> priority == -1 * _grad_checkpoint[_pointer];
+              // bool intoing = _stageproc && task -> priority == _mystack.top() + 1 ;
+              if((( _stagestart  && task -> priority == -1 * _grad_checkpoint[_pointer])|| task -> priority == _mystack.top() + 1) \
+                  && task -> priority  < -1 * _grad_checkpoint[_pointer - 1] \
+                  && task -> priority >= -1 * _grad_checkpoint[_pointer]){
+                    BPS_LOG(INFO) << "Position 2.5";
+                if(_stagestart  && task -> priority == -1 * _grad_checkpoint[_pointer]){
+                  _stagestart = 0;
+                  BPS_LOG(INFO) << "stage start";
+                  // _stageproc = 1;
+                }
                 _restpart = task -> total_partnum - 1;
                 _mystack.push(task -> priority);
                 BPS_LOG(INFO) << "ENQUEUE1 element: " << task -> priority << "The rest part num of this priority tensor is: " << _restpart;
@@ -186,7 +196,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
         }
         
         _pointer--;
-        _stagestart = 1;
+        
         // Size = Bandwidth * exectime , size decreased by the pop operation of mystack.
        // BPS_LOG(INFO) << "Task: " <<  task-> priority << "I have meet zero: " << _meetzero << " and door is open: " << _dooropen;
         if(task -> priority == 0) {
