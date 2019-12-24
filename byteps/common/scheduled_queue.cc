@@ -201,7 +201,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
             }
             else{
               _dequeue = 0;
-              BPS_LOG(INFO) << "No left size. Waiting for next gradient block." 
+              BPS_LOG(INFO) << "No left size. Waiting for next gradient block." ;
               break;  
             }      
         }
