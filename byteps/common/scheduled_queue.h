@@ -62,7 +62,7 @@ class BytePSScheduledQueue {
   int _sizepointer = 0;
   int _dequeue = 0;
   int _restpart = 0;
-  int _pointer = 11;
+  int _pointer = 12;
   int dynamic_size ;
   // int _middle[12] = {5,22,35,50,62,68,84,95,108,130,135,147};
   // int _middle[12] = {5,16,28,40,55,65,80,93,106,120,135,147};
