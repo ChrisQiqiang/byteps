@@ -154,25 +154,25 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
     {
           /////first  enqueue as the gradient block coming, then dequeue dynamically.
         if(_dequeue != 1){
-           BPS_LOG(INFO) << "ENQUE elements:"
+           BPS_LOG(DEBUG) << "ENQUE elements:";
             if(_restpart){
               if(task -> priority == _mystack.top()){
                
                 _mystack.push(task -> priority);
                 _restpart--;
-                BPS_LOG(INFO) << "ENQUEUE2 element: " << task -> priority << "The rest part num of this priority tensor is: " << _restpart;
+                BPS_LOG(DEBUG) << "ENQUEUE2 element: " << task -> priority << "The rest part num of this priority tensor is: " << _restpart;
               }
             }
             else{
               if(task -> priority == _mystack.top() + 1 && task -> priority  < -1 * _grad_checkpoint[_pointer - 1]){
                 _restpart = task -> total_partnum - 1;
                 _mystack.push(task -> priority);
-                BPS_LOG(INFO) << "ENQUEUE1 element: " << task -> priority << "The rest part num of this priority tensor is: " << _restpart;
+                BPS_LOG(DEBUG) << "ENQUEUE1 element: " << task -> priority << "The rest part num of this priority tensor is: " << _restpart;
               }
               if(task -> priority * -1 == _grad_checkpoint[_pointer - 1] + 1 && !_restpart){
                   _dequeue = 1;
                   dynamic_size = _execution[_sizepointer++];
-                  BPS_LOG(INFO) << "enqueue operation of one stage is over."
+                  BPS_LOG(DEBUG) << "enqueue operation of one stage is over.";
                   ///////////////////////////initialize dynamic size of this gradient stage.////////////////////////////
               }
                 
@@ -192,7 +192,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
             if(task -> priority !=  _mystack.top())continue; 
             if(dynamic_size > task -> len){
               dynamic_size -= task -> len;
-              BPS_LOG(INFO) << "dequeue eleme"
+              BPS_LOG(DEBUG) << "dequeue element: " << task -> tensor_name << "dynamic size now is: " << dynamic_size;
               _sq.erase(it);
               _mystack.pop();
             }
