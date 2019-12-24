@@ -184,7 +184,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
                   BPS_LOG(INFO) << "ENQUEUE1 element: " << task -> priority << "The rest part num of this priority tensor is: " << _restpart;
                   }
               BPS_LOG(INFO) << "Position 3";
-              if(!_mystack.empty() &&  _mystack.top() * -1 == _grad_checkpoint[_pointer - 1] + 1  && !_restpart){
+              if(!_mystack.empty() &&  _mystack.top() * -1 == _grad_checkpoint[_pointer - 1] + 1 ){
                   _dequeue = 1;
                   dynamic_size = _execution[_sizepointer++];               
                   BPS_LOG(INFO) << "enqueue operation of one stage is over." << "_sizepointer:" << _sizepointer;
@@ -193,10 +193,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
               BPS_LOG(INFO) << "Position 4:"  << "_sq size is: "<< _sq.size();
             }
             continue;
-        }
-        
-        _pointer--;
-        
+        }            
         // Size = Bandwidth * exectime , size decreased by the pop operation of mystack.
        // BPS_LOG(INFO) << "Task: " <<  task-> priority << "I have meet zero: " << _meetzero << " and door is open: " << _dooropen;
         if(task -> priority == 0) {
@@ -213,8 +210,9 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
               _mystack.pop();
               BPS_LOG(INFO) << "PUSH gradient: " << tmp ;
             }
-            else{
+            else{   //nxet stage enstack could begin.
               _dequeue = 0;
+              _pointer--;
               BPS_LOG(INFO) << "No left size. Waiting for next gradient block.";
               break;  
             }      
