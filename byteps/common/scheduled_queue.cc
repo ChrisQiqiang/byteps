@@ -169,7 +169,9 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
               // if(task -> priority == -1 * _grad_checkpoint[_pointer])_stagestart = 1;
               // bool intobegin = _stagestart && !_stageproc && task -> priority == -1 * _grad_checkpoint[_pointer];
               // bool intoing = _stageproc && task -> priority == _mystack.top() + 1 ;
-              
+              if(task -> priority == -155)
+                BPS_LOG(INFO) << "mystack is empty or not:" << _mystack.empty() <<  " low bound is: " << -1 * _grad_checkpoint[_pointer] \
+                  << " high bound is: "<< -1 * _grad_checkpoint[_pointer - 1] << "mystack top element is:" << _mystack.top(); 
               if( (task -> priority == -1 * _grad_checkpoint[_pointer] \   
                         && _stagestart)
                   || ( !_mystack.empty() && task -> priority > -1 * _grad_checkpoint[_pointer] \ 
