@@ -187,7 +187,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
                  _mystack.push(task -> priority);
                  BPS_LOG(INFO) << "ENQUEUE1 element: " << task -> priority << "The rest part num of this priority tensor is: " << _restpart;
               // BPS_LOG(INFO) << "Position 3";
-                if(!_mystack.empty() &&  _mystack.top() * -1 == _grad_checkpoint[_pointer - 1] + 1 )
+                if(!_mystack.empty() &&  _mystack.top() * -1 == _grad_checkpoint[_pointer - 1] + 1 && !_restpart )
                 {
                     _dequeue = 1;
                     dynamic_size = _execution[_sizepointer++];               
@@ -203,7 +203,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
        // BPS_LOG(INFO) << "Task: " <<  task-> priority << "I have meet zero: " << _meetzero << " and door is open: " << _dooropen;
         if(task -> priority == 0) {
           _meetzero = 1;
-         BPS_LOG(INFO) << "Meet zero.";
+         BPS_LOG(INFO) << "Meet zero." << "my stack size: " << _mystack.size();
          }
         if(!_meetzero)
         {
