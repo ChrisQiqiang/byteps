@@ -158,11 +158,13 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
             BPS_LOG(DEBUG) << "Position 1" << " pointer: " <<  _pointer <<" stagestart: " << _stagestart << " mystack empty:" <<  _mystack.empty() \
                 << "task name: " << task -> tensor_name << "restpart: " << _restpart; 
             if(_restpart){
-              if(task -> priority == _mystack.top()){
-                _mystack.push(task -> priority);
-                _restpart--;
-                BPS_LOG(DEBUG) << "ENQUEUE2 element: " << task -> priority << "The rest part num of this priority tensor is: " << _restpart;
-              }            
+              // if(task -> priority == _mystack.top()){
+              //   _mystack.push(task -> priority);
+              //   _restpart--;
+              //   BPS_LOG(DEBUG) << "ENQUEUE2 element: " << task -> priority << "The rest part num of this priority tensor is: " << _restpart;
+              // }  
+               _mystack.push(_mystack.top());
+              _restpart--;
             }
             else{
               // BPS_LOG(DEBUG) << "Position 2";
