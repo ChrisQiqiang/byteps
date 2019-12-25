@@ -167,20 +167,21 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
           bool proctagged = !_mystack.empty() && _tensor_part[(_mystack.top() + 1) * -1] \
                     && _mystack.top() + 1 > -1 * _grad_checkpoint[_pointer] \ 
                     && _mystack.top() + 1  < -1 * _grad_checkpoint[_pointer - 1];                                    ;
-
+          if(!_mystack.empty() && _mystack.top() == -156) 
+            BPS_LOG(INFO) << "proctagged when top is -156: " << proctagged; 
           if( taskisstart || taskisproc || starttagged || proctagged)
           {
             if(starttagged)
               for(int x = 0; x < _tensor_part[_grad_checkpoint[_pointer]]; x++){
                 _mystack.push(_grad_checkpoint[_pointer] * -1);
                 _stagestart = 0;
-                BPS_LOG(INFO) << "ENQUEUE at start element not firstly: " << _grad_checkpoint[_pointer] * -1;
+                BPS_LOG(INFO) << "ENQUEUE at start element not firstly: " << _grad_checkpoint[_pointer] * -1 << " mystack size: " << _mystack.size() ;
               }
             
             else if(proctagged)
               for(int x = 0; x < _tensor_part[(_mystack.top() + 1) * -1]; x++){
                 _mystack.push(_mystack.top() + 1);
-                BPS_LOG(INFO) << "ENQUEUE in proc element not firstly: " << _mystack.top() + 1;
+                BPS_LOG(INFO) << "ENQUEUE in proc element not firstly: " << _mystack.top() + 1 << " mystack size: " << _mystack.size();
               }
   
             else {
