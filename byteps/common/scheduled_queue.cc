@@ -163,8 +163,10 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
           bool taskisproc = !_mystack.empty() && task -> priority > -1 * _grad_checkpoint[_pointer] \ 
                     && task -> priority  < -1 * _grad_checkpoint[_pointer - 1] \
                     && task -> priority == _mystack.top() + 1;
-          bool starttagged = _stagestart && _tensor_part[_grad_checkpoint[_pointer]];
-          bool proctagged = !_mystack.empty() && _tensor_part[(_mystack.top() + 1) * -1];
+          bool starttagged = _stagestart && _tensor_part[_grad_checkpoint[_pointer]] ;
+          bool proctagged = !_mystack.empty() && _tensor_part[(_mystack.top() + 1) * -1] \
+                    && _mystack.top() + 1 > -1 * _grad_checkpoint[_pointer] \ 
+                    && _mystack.top() + 1  < -1 * _grad_checkpoint[_pointer - 1];                                    ;
 
           if( taskisstart || taskisproc || starttagged || proctagged)
           {
