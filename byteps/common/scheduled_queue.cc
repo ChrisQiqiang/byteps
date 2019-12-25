@@ -163,19 +163,20 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
           bool taskisproc = !_mystack.empty() && task -> priority > -1 * _grad_checkpoint[_pointer] \ 
                     && task -> priority  < -1 * _grad_checkpoint[_pointer - 1] \
                     && task -> priority == _mystack.top() + 1;
-          bool starttagged = _stagestart && _tensor_part[_grad_checkpoint[_pointer] * -1];
-          bool proctagged = !_mystack.empty() && _tensor_part[_mystack.top() + 1];
+          bool starttagged = _stagestart && _tensor_part[_grad_checkpoint[_pointer]];
+          bool proctagged = !_mystack.empty() && _tensor_part[(_mystack.top() + 1) * -1];
 
           if( taskisstart || taskisproc || starttagged || proctagged)
           {
             if(starttagged)
-              for(int x = 0; x < _tensor_part[_grad_checkpoint[_pointer] * -1]; x++){
+              for(int x = 0; x < _tensor_part[_grad_checkpoint[_pointer]]; x++){
                 _mystack.push(_grad_checkpoint[_pointer] * -1);
+                _stagestart = 0;
                 BPS_LOG(INFO) << "ENQUEUE element not firstly: " << _grad_checkpoint[_pointer] * -1;
               }
             
             else if(proctagged)
-              for(int x = 0; x < _tensor_part[_mystack.top() + 1]; x++){
+              for(int x = 0; x < _tensor_part[(_mystack.top() + 1) * -1]; x++){
                 _mystack.push(_mystack.top() + 1);
                 BPS_LOG(INFO) << "ENQUEUE element not firstly: " << _mystack.top() + 1;
               }
