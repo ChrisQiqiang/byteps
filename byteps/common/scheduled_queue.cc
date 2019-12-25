@@ -245,6 +245,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
           _pointer = 12;
           _stagestart = 1;
           _meetzero = 0;
+          _sizepointer = 0;
         //  _sizepointer =  _qt == PUSH ? 0:1;
         }
         task->ready_event = nullptr;
