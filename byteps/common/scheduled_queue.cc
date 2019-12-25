@@ -174,13 +174,13 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
               for(int x = 0; x < _tensor_part[_grad_checkpoint[_pointer]]; x++){
                 _mystack.push(_grad_checkpoint[_pointer] * -1);
                 _stagestart = 0;
-                BPS_LOG(INFO) << "ENQUEUE element not firstly: " << _grad_checkpoint[_pointer] * -1;
+                BPS_LOG(INFO) << "ENQUEUE at start element not firstly: " << _grad_checkpoint[_pointer] * -1;
               }
             
             else if(proctagged)
               for(int x = 0; x < _tensor_part[(_mystack.top() + 1) * -1]; x++){
                 _mystack.push(_mystack.top() + 1);
-                BPS_LOG(INFO) << "ENQUEUE element not firstly: " << _mystack.top() + 1;
+                BPS_LOG(INFO) << "ENQUEUE in proc element not firstly: " << _mystack.top() + 1;
               }
   
             else {
@@ -191,17 +191,17 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
                 BPS_LOG(INFO) << "ENQUEUE element firstly: " << task -> priority << "The rest part num of this priority tensor is: " << _restpart;
               }
             }
-          }
-          if(!_mystack.empty() &&  _mystack.top() * -1 == _grad_checkpoint[_pointer - 1] + 1 )
-          {
-              _dequeue = 1;
-              dynamic_size = _execution[_sizepointer++];               
-              BPS_LOG(INFO) << "enqueue operation of one stage is over." << "_sizepointer:" << _sizepointer << "mystack top is: " << _mystack.top();
-              break;
-              ///////////////////////////initialize dynamic size of this gradient stage.////////////////////////////
+            if(!_mystack.empty() &&  _mystack.top() * -1 == _grad_checkpoint[_pointer - 1] + 1 )
+            {
+                _dequeue = 1;
+                dynamic_size = _execution[_sizepointer++];               
+                BPS_LOG(INFO) << "enqueue operation of one stage is over." << "_sizepointer:" << _sizepointer << "mystack top is: " << _mystack.top();
+                break;
+                ///////////////////////////initialize dynamic size of this gradient stage.////////////////////////////
+            }
           }
           // BPS_LOG(INFO) << "Position 4:"  << "_sq size is: "<< _sq.size();
-      //  }
+  
           continue;
         }            
         // Size = Bandwidth * exectime , size decreased by the pop operation of mystack.
@@ -229,7 +229,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
             }      
         }
         else if(!_dooropen) {//we cannot change the value of tensor_part if door is closed.
-          BPS_LOG(INFO) << "push door is closed.";
+          BPS_LOG(DEBUG) << "push door is closed.";
           break;
         }
         else {         
