@@ -194,6 +194,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
               }
               BPS_LOG(INFO) << "Position 4:"  << "_sq size is: "<< _sq.size();
             }
+           }
             continue;
         }            
         // Size = Bandwidth * exectime , size decreased by the pop operation of mystack.
