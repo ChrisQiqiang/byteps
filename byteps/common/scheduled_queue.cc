@@ -187,15 +187,15 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
                  _mystack.push(task -> priority);
                  BPS_LOG(INFO) << "ENQUEUE1 element: " << task -> priority << "The rest part num of this priority tensor is: " << _restpart;
               // BPS_LOG(INFO) << "Position 3";
-                if(!_mystack.empty() &&  _mystack.top() * -1 == _grad_checkpoint[_pointer - 1] + 1 && !_restpart )
-                {
-                    _dequeue = 1;
-                    dynamic_size = _execution[_sizepointer++];               
-                    BPS_LOG(INFO) << "enqueue operation of one stage is over." << "_sizepointer:" << _sizepointer << "mystack top is: " << _mystack.top();
-                    ///////////////////////////initialize dynamic size of this gradient stage.////////////////////////////
-                }
-              // BPS_LOG(INFO) << "Position 4:"  << "_sq size is: "<< _sq.size();
               }
+              if(!_mystack.empty() &&  _mystack.top() * -1 == _grad_checkpoint[_pointer - 1] + 1 && !_restpart )
+              {
+                  _dequeue = 1;
+                  dynamic_size = _execution[_sizepointer++];               
+                  BPS_LOG(INFO) << "enqueue operation of one stage is over." << "_sizepointer:" << _sizepointer << "mystack top is: " << _mystack.top();
+                  ///////////////////////////initialize dynamic size of this gradient stage.////////////////////////////
+              }
+              // BPS_LOG(INFO) << "Position 4:"  << "_sq size is: "<< _sq.size();
            }
             continue;
         }            
