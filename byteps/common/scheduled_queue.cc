@@ -169,22 +169,24 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
               // if(task -> priority == -1 * _grad_checkpoint[_pointer])_stagestart = 1;
               // bool intobegin = _stagestart && !_stageproc && task -> priority == -1 * _grad_checkpoint[_pointer];
               // bool intoing = _stageproc && task -> priority == _mystack.top() + 1 ;
-              if(task -> priority == -1 * _grad_checkpoint[_pointer] \   
+              
+              if( (task -> priority == -1 * _grad_checkpoint[_pointer] \   
+                        && _stagestart)
                   || ( task -> priority > -1 * _grad_checkpoint[_pointer] \ 
-                  && task -> priority  < -1 * _grad_checkpoint[_pointer - 1] \
-                  && task -> priority == _mystack.top() + 1 ))
-                  {
-                    BPS_LOG(INFO) << "Position 2.5";
-                // if(_stagestart  && task -> priority == -1 * _grad_checkpoint[_pointer]){
-                //   _stagestart = 0;
-                    BPS_LOG(INFO) << "stage start";
-                  // _stageproc = 1;
-                  _restpart = task -> total_partnum - 1;
-                  _mystack.push(task -> priority);
-                  BPS_LOG(INFO) << "ENQUEUE1 element: " << task -> priority << "The rest part num of this priority tensor is: " << _restpart;
-                  }
+                        && task -> priority  < -1 * _grad_checkpoint[_pointer - 1] \
+                        && task -> priority == _mystack.top() + 1 ))
+              {
+                 BPS_LOG(INFO) << "Position 2.5";
+                 if(task -> priority == -1 * _grad_checkpoint[_pointer]){
+                    _stagestart = 0;  //set stagestart to 0 as the gradient stage coming, and when stagestart set back to 1, pointer has been decreased.
+                 BPS_LOG(INFO) << "stage start";
+                 _restpart = task -> total_partnum - 1;
+                 _mystack.push(task -> priority);
+                 BPS_LOG(INFO) << "ENQUEUE1 element: " << task -> priority << "The rest part num of this priority tensor is: " << _restpart;
+              }
               BPS_LOG(INFO) << "Position 3";
-              if(!_mystack.empty() &&  _mystack.top() * -1 == _grad_checkpoint[_pointer - 1] + 1 ){
+              if(!_mystack.empty() &&  _mystack.top() * -1 == _grad_checkpoint[_pointer - 1] + 1 )
+              {
                   _dequeue = 1;
                   dynamic_size = _execution[_sizepointer++];               
                   BPS_LOG(INFO) << "enqueue operation of one stage is over." << "_sizepointer:" << _sizepointer;
@@ -213,6 +215,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
             else{   //nxet stage enstack could begin.
               _dequeue = 0;
               _pointer--;
+              _stagestart = 1;
               BPS_LOG(INFO) << "No left size. Waiting for next gradient block.";
               break;  
             }      
