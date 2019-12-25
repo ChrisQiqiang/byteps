@@ -172,9 +172,9 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
               
               if( (task -> priority == -1 * _grad_checkpoint[_pointer] \   
                         && _stagestart)
-                  || ( task -> priority > -1 * _grad_checkpoint[_pointer] \ 
+                  || ( !_mystack.empty() && task -> priority > -1 * _grad_checkpoint[_pointer] \ 
                         && task -> priority  < -1 * _grad_checkpoint[_pointer - 1] \
-                        && task -> priority == _mystack.top() + 1 ))
+                        && task -> priority == _mystack.top() + 1 ) )
               {
                  BPS_LOG(INFO) << "Position 2.5";
                  if(task -> priority == -1 * _grad_checkpoint[_pointer]){
@@ -241,6 +241,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
           _dequeue = 0;
           _restpart = 0;
           _pointer = 12;
+          _stagestart = 1;
          _sizepointer =  _qt == PUSH ? 0:1;
         }
         task->ready_event = nullptr;
