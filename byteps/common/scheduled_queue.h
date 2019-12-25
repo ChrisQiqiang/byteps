@@ -51,7 +51,7 @@ class BytePSScheduledQueue {
   // uint64_t _pull_backward_size;
   // uint64_t _pull_credits;
   bool _is_scheduled;
-  // int _tensor_part[160] = {0};//log every transferred tensor part
+  int _tensor_part[160] = {0};//log every transferred tensor part
   // int _tensor_num = 0; //log the number of transferred tensor.
   // int _vis[160] = {0};
   int _meetzero = 0;
