@@ -179,9 +179,10 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
               }
             
             else if(proctagged)
-              for(int x = 0; x < _tensor_part[(_mystack.top() + 1) * -1]; x++){
-                _mystack.push(_mystack.top() + 1);
-                BPS_LOG(INFO) << "ENQUEUE in proc element not firstly: " << _mystack.top() + 1 << " mystack size: " << _mystack.size();
+              int tmp = _mystack.top() + 1;
+              for(int x = 0; x < _tensor_part[tmp * -1]; x++){
+                _mystack.push(tmp + 1);
+                BPS_LOG(INFO) << "ENQUEUE in proc element not firstly: " <<tmp + 1 << " mystack size: " << _mystack.size();
               }
   
             else {
