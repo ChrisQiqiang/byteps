@@ -156,7 +156,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
     {
           /////first  enqueue as the gradient block coming, then dequeue dynamically.
         if(_dequeue != 1){
-          BPS_LOG(INFO) << "Position 1" << " pointer: " <<  _pointer <<" stagestart: " << _stagestart << " mystack empty:" <<  _mystack.empty() \
+          BPS_LOG(DEBUG) << "Position 1" << " pointer: " <<  _pointer <<" stagestart: " << _stagestart << " mystack empty:" <<  _mystack.empty() \
                 << "task name: " << task -> tensor_name << "restpart: " << _restpart; 
  
           bool taskisstart = task -> priority == -1 * _grad_checkpoint[_pointer]  && _stagestart ;
