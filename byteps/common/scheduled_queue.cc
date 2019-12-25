@@ -56,7 +56,7 @@ BytePSScheduledQueue::BytePSScheduledQueue(QueueType type) {
       }
       break;
     case PUSH:
-      //BPS_LOG(INFO) << "IN PUSH: " << _is_scheduled ;
+      //BPS_LOG(DEBUG) << "IN PUSH: " << _is_scheduled ;
       if (BytePSGlobal::IsRootDevice()) {
         _rt = BytePSGlobal::GetPushTable();
       }
@@ -76,7 +76,7 @@ BytePSScheduledQueue::BytePSScheduledQueue(QueueType type) {
       if (BytePSGlobal::IsRootDevice()) {
         _rt = BytePSGlobal::GetPullTable();
       }
-      _sizepointer=1;
+      // _sizepointer=1;
       break;
     default:
       break;
@@ -149,28 +149,28 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
     }
     std::string tmp = (*it) -> tensor_name;
     task = *it;
-  //  BPS_LOG(INFO) << _qt << " tensor name: " << tmp;
+  //  BPS_LOG(DEBUG) << _qt << " tensor name: " << tmp;
 
     if( (_qt == PUSH || _qt == PULL )&& tmp.find("gradient") != tmp.npos )
     {
           /////first  enqueue as the gradient block coming, then dequeue dynamically.
         if(_dequeue != 1){
-            // BPS_LOG(INFO) << "Position 1";
+            // BPS_LOG(DEBUG) << "Position 1";
             if(_restpart){
               if(task -> priority == _mystack.top()){
                 _mystack.push(task -> priority);
                 _restpart--;
-                BPS_LOG(INFO) << "ENQUEUE2 element: " << task -> priority << "The rest part num of this priority tensor is: " << _restpart;
+                BPS_LOG(DEBUG) << "ENQUEUE2 element: " << task -> priority << "The rest part num of this priority tensor is: " << _restpart;
               }            
             }
             else{
-              // BPS_LOG(INFO) << "Position 2";
-              // BPS_LOG(INFO) << "task priority: " << task -> priority << "  _mystack top: " << _mystack.top();
+              // BPS_LOG(DEBUG) << "Position 2";
+              // BPS_LOG(DEBUG) << "task priority: " << task -> priority << "  _mystack top: " << _mystack.top();
               // if(task -> priority == -1 * _grad_checkpoint[_pointer])_stagestart = 1;
               // bool intobegin = _stagestart && !_stageproc && task -> priority == -1 * _grad_checkpoint[_pointer];
               // bool intoing = _stageproc && task -> priority == _mystack.top() + 1 ;
               // if(task -> priority == -155)
-              //   BPS_LOG(INFO) << "mystack is empty or not:" << _mystack.empty() <<  " low bound is: " << -1 * _grad_checkpoint[_pointer] \
+              //   BPS_LOG(DEBUG) << "mystack is empty or not:" << _mystack.empty() <<  " low bound is: " << -1 * _grad_checkpoint[_pointer] \
               //     << " high bound is: "<< -1 * _grad_checkpoint[_pointer - 1] << "mystack top element is:" << _mystack.top(); 
               if( (task -> priority == -1 * _grad_checkpoint[_pointer] \   
                         && _stagestart)
@@ -178,53 +178,53 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
                         && task -> priority  < -1 * _grad_checkpoint[_pointer - 1] \
                         && task -> priority == _mystack.top() + 1 ) )
               {
-                //  BPS_LOG(INFO) << "Position 2.5";
+                //  BPS_LOG(DEBUG) << "Position 2.5";
                  if(task -> priority == -1 * _grad_checkpoint[_pointer]){
                     _stagestart = 0;  //set stagestart to 0 as the gradient stage coming, and when stagestart set back to 1, pointer has been decreased.
-                //  BPS_LOG(INFO) << "stage start";
+                //  BPS_LOG(DEBUG) << "stage start";
                  }
                  _restpart = task -> total_partnum - 1;
                  _mystack.push(task -> priority);
-                 BPS_LOG(INFO) << "ENQUEUE1 element: " << task -> priority << "The rest part num of this priority tensor is: " << _restpart;
-              // BPS_LOG(INFO) << "Position 3";
+                 BPS_LOG(DEBUG) << "ENQUEUE1 element: " << task -> priority << "The rest part num of this priority tensor is: " << _restpart;
+              // BPS_LOG(DEBUG) << "Position 3";
               }
               if(!_mystack.empty() &&  _mystack.top() * -1 == _grad_checkpoint[_pointer - 1] + 1 && !_restpart )
               {
                   _dequeue = 1;
                   dynamic_size = _execution[_sizepointer++];               
-                  BPS_LOG(INFO) << "enqueue operation of one stage is over." << "_sizepointer:" << _sizepointer << "mystack top is: " << _mystack.top();
+                  BPS_LOG(DEBUG) << "enqueue operation of one stage is over." << "_sizepointer:" << _sizepointer << "mystack top is: " << _mystack.top();
                   ///////////////////////////initialize dynamic size of this gradient stage.////////////////////////////
               }
-              // BPS_LOG(INFO) << "Position 4:"  << "_sq size is: "<< _sq.size();
+              // BPS_LOG(DEBUG) << "Position 4:"  << "_sq size is: "<< _sq.size();
            }
             continue;
         }            
         // Size = Bandwidth * exectime , size decreased by the pop operation of mystack.
-       // BPS_LOG(INFO) << "Task: " <<  task-> priority << "I have meet zero: " << _meetzero << " and door is open: " << _dooropen;
+       // BPS_LOG(DEBUG) << "Task: " <<  task-> priority << "I have meet zero: " << _meetzero << " and door is open: " << _dooropen;
         if(task -> priority == 0) {
           _meetzero = 1;
-         BPS_LOG(INFO) << "Meet zero." << "my stack size: " << _mystack.size();
+         BPS_LOG(DEBUG) << "Meet zero." << "my stack size: " << _mystack.size();
          }
         if(!_meetzero)
         {
             if(task -> priority !=  _mystack.top())continue; 
             if(dynamic_size > task -> len){
               dynamic_size -= task -> len;
-              BPS_LOG(INFO) << "dequeue element: " << task -> tensor_name << "dynamic size now is: " << dynamic_size;
+              BPS_LOG(DEBUG) << "dequeue element: " << task -> tensor_name << "dynamic size now is: " << dynamic_size;
               _sq.erase(it);
               _mystack.pop();
-              BPS_LOG(INFO) << "PUSH gradient: " << tmp ;
+              BPS_LOG(DEBUG) << "PUSH gradient: " << tmp ;
             }
             else{   //nxet stage enstack could begin.
               _dequeue = 0;
               _pointer--;
               _stagestart = 1;
-              BPS_LOG(INFO) << "No left size. Waiting for next gradient block.";
+              BPS_LOG(DEBUG) << "No left size. Waiting for next gradient block.";
               break;  
             }      
         }
         else if(!_dooropen) {//we cannot change the value of tensor_part if door is closed.
-          BPS_LOG(INFO) << "door is closed.";
+          BPS_LOG(DEBUG) << "door is closed.";
           break;
         }
         else {         
@@ -233,10 +233,10 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
             // dynamic_size -= task -> len;  // if meetzero, dynamic size is no meaning.
             _sq.erase(it);
             _mystack.pop();
-            BPS_LOG(INFO) << "PUSH gradient: " << tmp ;
-            // BPS_LOG(INFO) << "The door has been closed.";
+            BPS_LOG(DEBUG) << "PUSH gradient: " << tmp ;
+            // BPS_LOG(DEBUG) << "The door has been closed.";
         }
-        //  BPS_LOG(INFO) << "transferred tensor num: " << _tensor_num  << "  empty: " << _mystack.empty() << " size of myqueue: " << _mystack.size();
+        //  BPS_LOG(DEBUG) << "transferred tensor num: " << _tensor_num  << "  empty: " << _mystack.empty() << " size of myqueue: " << _mystack.size();
         if(_mystack.empty())
         {
           BPS_LOG(INFO) << "Clear.";
@@ -245,7 +245,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
           _pointer = 12;
           _stagestart = 1;
           _meetzero = 0;
-         _sizepointer =  _qt == PUSH ? 0:1;
+        //  _sizepointer =  _qt == PUSH ? 0:1;
         }
         task->ready_event = nullptr;
         // Add for profiling communication traces
@@ -313,7 +313,7 @@ void BytePSScheduledQueue::reportFinish(int size) {
          if(_dooropen < 11)
               _dooropen++;
          }       
-         // BPS_LOG(INFO) << "door open value:" << _dooropen;
+         // BPS_LOG(DEBUG) << "door open value:" << _dooropen;
   }
   return;
 }
