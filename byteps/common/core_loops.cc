@@ -658,7 +658,7 @@ bool RunNonRootCopyHost2DeviceLoopOnce() {
     CopyHost2Device(task);
     FinishOrProceed(task);
   } else {
-    std::this_thread::sleep_for(std::chrono::nanoseconds(1000));
+    std::this_thread::sleep_for(std::chrono::nanoseconds(100));
   }
   return true;
 }

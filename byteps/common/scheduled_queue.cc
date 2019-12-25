@@ -155,7 +155,8 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
     {
           /////first  enqueue as the gradient block coming, then dequeue dynamically.
         if(_dequeue != 1){
-            BPS_LOG(INFO) << "Position 1" << " pointer: " <<  _pointer <<" stagestart: " << _stagestart << " mystack empty:" <<  _mystack.empty();
+            BPS_LOG(INFO) << "Position 1" << " pointer: " <<  _pointer <<" stagestart: " << _stagestart << " mystack empty:" <<  _mystack.empty() \
+                << "task name: " << task -> tensor_name << "restpart: " << restpart; 
             if(_restpart){
               if(task -> priority == _mystack.top()){
                 _mystack.push(task -> priority);
@@ -193,6 +194,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
                   _dequeue = 1;
                   dynamic_size = _execution[_sizepointer++];               
                   BPS_LOG(INFO) << "enqueue operation of one stage is over." << "_sizepointer:" << _sizepointer << "mystack top is: " << _mystack.top();
+                  break;
                   ///////////////////////////initialize dynamic size of this gradient stage.////////////////////////////
               }
               // BPS_LOG(DEBUG) << "Position 4:"  << "_sq size is: "<< _sq.size();
