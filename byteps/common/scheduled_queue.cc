@@ -186,7 +186,6 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
               }
             }
 
-  
             else {
               if(taskisstart) _stagestart = 0; 
               _tensor_part[task -> priority * -1] = task -> total_partnum;
@@ -313,7 +312,6 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
                 _dequeue = 1;
                 // dynamic_size = _backward_exec[_sizepointer] > _backward_exec[_sizepointer - 1] ? _backward_exec[_sizepointer - 1] : _backward_exec[_sizepointer];               
                 dynamic_size = _backward_exec[_sizepointer++];
-                _exec_stage++;
                 BPS_LOG(INFO) << "PULL: enqueue operation of one stage is over." << "_sizepointer:" << _sizepointer << "mystack top is: " << _mystack.top();
                 break;
                 ///////////////////////////initialize dynamic size of this gradient stage.////////////////////////////
@@ -368,8 +366,12 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
               BPS_LOG(INFO) << "PULL: dequeue after zero enforced: " << task -> tensor_name << "  _exec_stage is:" << _exec_stage <<  "   forward dynamic size:"  \
                 << forward_dynamic_size << "  pull door val is:" <<  _pulldoor;
             }
-            else
-                break; 
+            else{
+              _stagepullnum = _pulldoor;
+              BPS_LOG(INFO) << "initilize stagepullnum at stage "<< _exec_stage << ":  " << _stagepullnum;
+              break;
+            } 
+                 
             if(_mystack.empty())//reset parameter
             {
               BPS_LOG(INFO) << "Clear.";
@@ -465,10 +467,14 @@ void BytePSScheduledQueue::reportFinish(int size) {
   }
   if(_qt == PULL)
   {
-    if(_pulldoor > 0){
-      _pulldoor--;
-      BPS_LOG(INFO) << "PULL PROCESS FINISH: pulldoor value is:" << _pulldoor;
-      // if(!_pulldoor)_exec_stage++;
+    if(_stagepullnum > 0){
+      _stagepullnum--;
+      BPS_LOG(INFO) << "PULL PROCESS FINISH: _stagepullnum value is:" << _stagepullnum;
+      if(!_stagepullnum){
+        _exec_stage++;
+        _pulldoor = 0;
+        BPS_LOG(INFO) << "STAGE PULL PROCESS FINISH: stage is:" << _exec_stage - 1;
+      }
     }
 
   }
