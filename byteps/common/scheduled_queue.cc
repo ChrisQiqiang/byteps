@@ -362,6 +362,8 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
               BPS_LOG(INFO) << "dequeue after zero enforced: " << task -> tensor_name << "   forward dynamic size:"  \
                 << forward_dynamic_size << "pull door val is:" <<  _pulldoor;
             }
+            else
+                break; 
             if(_mystack.empty())//reset parameter
             {
               BPS_LOG(DEBUG) << "Clear.";
