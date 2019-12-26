@@ -455,9 +455,12 @@ void BytePSScheduledQueue::reportFinish(int size) {
   }
   if(_qt == PULL)
   {
-    if(_pulldoor > 0)_pulldoor--;
-    BPS_LOG(INFO) << "PULL PROCESS FINISH: pulldoor value is:" << _pulldoor;
-    if(!_pulldoor)_exec_stage++;
+    if(_pulldoor > 0){
+      _pulldoor--;
+      BPS_LOG(INFO) << "PULL PROCESS FINISH: pulldoor value is:" << _pulldoor;
+      if(!_pulldoor)_exec_stage++;
+    }
+
   }
   return;
 }
