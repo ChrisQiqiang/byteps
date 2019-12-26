@@ -346,7 +346,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
             }      //maybe no left size, but has no time to search the next one before meetzero;
         }
         else {
-            if(_mystack.top() * 1 != _grad_checkpoint[_pointer - 1] + 1 && _sizepointer < 12){
+            if(_mystack.top() * -1 != _grad_checkpoint[_pointer - 1] + 1 && _sizepointer < 12){
                 _dequeue = 0;
                 _pointer--;
                 _stagestart = 1;
