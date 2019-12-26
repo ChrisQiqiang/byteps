@@ -322,7 +322,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
           continue;
         }  
 
-      if(task -> priority == 0)_meetzero = 1;
+      if(_tnsor_part[0] && task -> priority == 0)_meetzero = 1;
       if(!_meetzero)
         {
             if(task -> priority !=  _mystack.top())continue; 
@@ -331,7 +331,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
               BPS_LOG(INFO) << "PULL: dequeue element: " << task -> tensor_name << "dynamic size now is: " << dynamic_size;
               _sq.erase(it);
               _mystack.pop();
-              BPS_LOG(INFO) << "PULL: gradient before 0: " << tmp ;
+              BPS_LOG(INFO) << "PULL: gradient before 0: " << tmp << "meet zero: " << _meetzero;
             }
             else{   //nxet stage enstack could begin.
               _dequeue = 0;
