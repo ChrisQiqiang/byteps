@@ -313,6 +313,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
                 _dequeue = 1;
                 // dynamic_size = _backward_exec[_sizepointer] > _backward_exec[_sizepointer - 1] ? _backward_exec[_sizepointer - 1] : _backward_exec[_sizepointer];               
                 dynamic_size = _backward_exec[_sizepointer++];
+                _exec_stage++;
                 BPS_LOG(INFO) << "PULL: enqueue operation of one stage is over." << "_sizepointer:" << _sizepointer << "mystack top is: " << _mystack.top();
                 break;
                 ///////////////////////////initialize dynamic size of this gradient stage.////////////////////////////
@@ -346,7 +347,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
               break;  
             }      
         }
-      else{
+      else if(_exec_stage < 13){
             if(!_pulldoor) {
               forward_dynamic_size = _forward_exec[_exec_stage];
               // BPS_LOG(INFO) << "exec_stage: " << _exec_stage << " initilized." << "  beginning dynamic size:"<< forward_dynamic_size;
@@ -357,14 +358,14 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
               _mystack.pop();
               forward_dynamic_size -= task -> len;
               _pulldoor++;
-              BPS_LOG(INFO) << "dequeue after zero: " << task -> tensor_name << "  forward dynamic size:" \
+              BPS_LOG(INFO) << "dequeue after zero: " << task -> tensor_name << "_exec_stage is:" << _exec_stage << "  forward dynamic size:" \
                   << forward_dynamic_size << "pull door val is:" <<  _pulldoor;
             }
             else if(!_mystack.empty() && _mystack.top() >= -1 * _grad_checkpoint[_exec_stage + 1]){
               _sq.erase(it);
               _mystack.pop();
               _pulldoor++;
-              BPS_LOG(INFO) << "dequeue after zero enforced: " << task -> tensor_name << "   forward dynamic size:"  \
+              BPS_LOG(INFO) << "dequeue after zero enforced: " << task -> tensor_name << "_exec_stage is:" << _exec_stage <<  "   forward dynamic size:"  \
                 << forward_dynamic_size << "pull door val is:" <<  _pulldoor;
             }
             else
@@ -466,7 +467,7 @@ void BytePSScheduledQueue::reportFinish(int size) {
     if(_pulldoor > 0){
       _pulldoor--;
       BPS_LOG(INFO) << "PULL PROCESS FINISH: pulldoor value is:" << _pulldoor;
-      if(!_pulldoor)_exec_stage++;
+      // if(!_pulldoor)_exec_stage++;
     }
 
   }
