@@ -371,7 +371,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
                 _stagepullnum = _pulldoor;
                 BPS_LOG(INFO) << "initilize stagepullnum at stage "<< _exec_stage << ":  " << _stagepullnum;
               }
-              if(_sizepointer < 13){
+              if(_sizepointer < 12){
                 _dequeue = 0;
                 _pointer--;
                 _stagestart = 1;
@@ -393,7 +393,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
               _stagepullnum = 0;
               _pulldoor=0;
             }  
-            if(_sizepointer < 13){
+            if(_sizepointer < 12){
                 _dequeue = 0;
                 _pointer--;
                 _stagestart = 1;
