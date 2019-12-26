@@ -367,8 +367,16 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
                 << forward_dynamic_size << "  pull door val is:" <<  _pulldoor;
             }
             else{
-              if(!_stagepullnum)_stagepullnum = _pulldoor;
-              BPS_LOG(INFO) << "initilize stagepullnum at stage "<< _exec_stage << ":  " << _stagepullnum;
+              if(!_stagepullnum && _pulldoor){
+                _stagepullnum = _pulldoor;
+                BPS_LOG(INFO) << "initilize stagepullnum at stage "<< _exec_stage << ":  " << _stagepullnum;
+              }
+              if(_sizepointer < 13){
+                _dequeue = 0;
+                _pointer--;
+                _stagestart = 1;
+              BPS_LOG(INFO) << "REINTILIZE DEQUE ,POINTER AND STAGESTART.";
+              }
               break;
             } 
                  
@@ -385,6 +393,12 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
               _stagepullnum = 0;
               _pulldoor=0;
             }  
+            if(_sizepointer < 13){
+                _dequeue = 0;
+                _pointer--;
+                _stagestart = 1;
+                BPS_LOG(INFO) << "REINTILIZE DEQUE ,POINTER AND STAGESTART.";
+              }
           // BPS_LOG(DEBUG) << "PULL door is closed.";
           // break;
           }
