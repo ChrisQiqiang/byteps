@@ -300,8 +300,6 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
                 BPS_LOG(INFO) << "PULL: ENQUEUE in proc element not firstly: " << tmp  << " mystack size: " << _mystack.size();
               }
             }
-
-  
             else {
               if(taskisstart) _stagestart = 0; 
               _tensor_part[task -> priority * -1] = task -> total_partnum;
@@ -313,7 +311,8 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
             if(!_mystack.empty() &&  _mystack.top() * -1 == _grad_checkpoint[_pointer - 1] + 1 )
             {
                 _dequeue = 1;
-                dynamic_size = _backward_exec[_sizepointer++];               
+                // dynamic_size = _backward_exec[_sizepointer] > _backward_exec[_sizepointer - 1] ? _backward_exec[_sizepointer - 1] : _backward_exec[_sizepointer];               
+                dynamic_size = _backward_exec[_sizepointer++];
                 BPS_LOG(INFO) << "PULL: enqueue operation of one stage is over." << "_sizepointer:" << _sizepointer << "mystack top is: " << _mystack.top();
                 break;
                 ///////////////////////////initialize dynamic size of this gradient stage.////////////////////////////
@@ -331,6 +330,12 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
               BPS_LOG(INFO) << "PULL: dequeue element: " << task -> tensor_name << "dynamic size now is: " << dynamic_size;
               _sq.erase(it);
               _mystack.pop();
+              if(!_sq.size()){
+                _dequeue = 0;
+                _pointer--;
+                _stagestart = 1;
+                BPS_LOG(INFO) << "PULL: size is redundant, waiting...";
+              }
               BPS_LOG(INFO) << "PULL: gradient before 0: " << tmp << "meet zero: " << _meetzero;
             }
             else{   //nxet stage enstack could begin.
@@ -344,7 +349,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
       else{
             if(!_pulldoor) {
               forward_dynamic_size = _forward_exec[_exec_stage];
-              BPS_LOG(INFO) << "exec_stage: " << _exec_stage << " initilized." << "  beginning dynamic size:"<< forward_dynamic_size;
+              // BPS_LOG(INFO) << "exec_stage: " << _exec_stage << " initilized." << "  beginning dynamic size:"<< forward_dynamic_size;
             }
             if(!_mystack.empty() && task -> priority != _mystack.top())continue;
             if(!_mystack.empty() && forward_dynamic_size > task -> len){
@@ -366,7 +371,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
                 break; 
             if(_mystack.empty())//reset parameter
             {
-              BPS_LOG(DEBUG) << "Clear.";
+              BPS_LOG(INFO) << "Clear.";
               _dequeue = 0;
               _pointer = 12;
               _stagestart = 1;
