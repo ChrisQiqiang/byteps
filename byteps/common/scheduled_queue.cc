@@ -347,26 +347,26 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
               break;  
             }      
         }
-      else if(_exec_stage < 13){
+        else {
             if(!_pulldoor) {
               forward_dynamic_size = _forward_exec[_exec_stage];
               // BPS_LOG(INFO) << "exec_stage: " << _exec_stage << " initilized." << "  beginning dynamic size:"<< forward_dynamic_size;
             }
             if(!_mystack.empty() && task -> priority != _mystack.top())continue;
-            if(!_mystack.empty() && forward_dynamic_size > task -> len){
+            if(!_mystack.empty() && (forward_dynamic_size > task -> len || _exec_stage >= 13)){
               _sq.erase(it);
               _mystack.pop();
               forward_dynamic_size -= task -> len;
               _pulldoor++;
-              BPS_LOG(INFO) << "dequeue after zero: " << task -> tensor_name << "_exec_stage is:" << _exec_stage << "  forward dynamic size:" \
-                  << forward_dynamic_size << "pull door val is:" <<  _pulldoor;
+              BPS_LOG(INFO) << "PULL: dequeue after zero: " << task -> tensor_name << "  _exec_stage is:" << _exec_stage << "  forward dynamic size:" \
+                  << forward_dynamic_size << "  pull door val is:" <<  _pulldoor;
             }
             else if(!_mystack.empty() && _mystack.top() >= -1 * _grad_checkpoint[_exec_stage + 1]){
               _sq.erase(it);
               _mystack.pop();
               _pulldoor++;
-              BPS_LOG(INFO) << "dequeue after zero enforced: " << task -> tensor_name << "_exec_stage is:" << _exec_stage <<  "   forward dynamic size:"  \
-                << forward_dynamic_size << "pull door val is:" <<  _pulldoor;
+              BPS_LOG(INFO) << "PULL: dequeue after zero enforced: " << task -> tensor_name << "  _exec_stage is:" << _exec_stage <<  "   forward dynamic size:"  \
+                << forward_dynamic_size << "  pull door val is:" <<  _pulldoor;
             }
             else
                 break; 
@@ -379,16 +379,17 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
               _meetzero = 0;
               _sizepointer = 1;//different from push process
               // _dooropen = 11;
-              _exec_stage = 0;
+              _exec_stage = -1;
               _pulldoor=0;
             }  
           // BPS_LOG(DEBUG) << "PULL door is closed.";
           // break;
           }
-        task->ready_event = nullptr;
-        // Add for profiling communication traces
-        recorderTs(task);
-        return task;
+
+      task->ready_event = nullptr;
+      // Add for profiling communication traces
+      recorderTs(task);
+      return task;
     }
  
 //Detail: meetzero, pull the first stage immediately. When the stage1 is running, we could transfer `S = forward_stage1_time * bandwidth` data.
