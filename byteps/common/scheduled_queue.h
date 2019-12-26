@@ -60,6 +60,7 @@ class BytePSScheduledQueue {
   int _backward_exec[13] = {4550000,4710000,2780000,3000000,4240000,5400000,4450000,6480000,9140000,7400000,5860000,0,0};
   int _forward_exec[13] = {0,2700000,2800000,1680000,1800000,2550000,3240000,2670000,3800000,5400000,4400000,3500000,0};
   int _exec_stage = 0;
+  int _noleftsize = 0;
   int forward_dynamic_size;
   int _sizepointer = 0;
   int _stagepullnum = 0;
