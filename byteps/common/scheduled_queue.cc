@@ -322,7 +322,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
           continue;
         }  
 
-      if(_tnsor_part[0] && task -> priority == 0)_meetzero = 1;
+      if(_tensor_part[0] && task -> priority == 0)_meetzero = 1;
       if(!_meetzero)
         {
             if(task -> priority !=  _mystack.top())continue; 
