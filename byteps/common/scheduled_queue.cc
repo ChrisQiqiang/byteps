@@ -380,7 +380,13 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
               break;
             } 
                  
-            if(_mystack.empty())//reset parameter
+          if(_sizepointer < 12){
+                _dequeue = 0;
+                _pointer--;
+                _stagestart = 1;
+                BPS_LOG(INFO) << "REINTILIZE DEQUE ,POINTER AND STAGESTART.";
+              }
+          if(_mystack.empty())//reset parameter
             {
               BPS_LOG(INFO) << "Clear.";
               _dequeue = 0;
@@ -393,12 +399,6 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
               _stagepullnum = 0;
               _pulldoor=0;
             }  
-            if(_sizepointer < 12){
-                _dequeue = 0;
-                _pointer--;
-                _stagestart = 1;
-                BPS_LOG(INFO) << "REINTILIZE DEQUE ,POINTER AND STAGESTART.";
-              }
           // BPS_LOG(DEBUG) << "PULL door is closed.";
           // break;
           }
