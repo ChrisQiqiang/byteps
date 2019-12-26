@@ -371,8 +371,9 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
               _pointer = 12;
               _stagestart = 1;
               _meetzero = 0;
-              _sizepointer = 0;
-              _dooropen = 11;
+              _sizepointer = 1;//different from push process
+              // _dooropen = 11;
+              _exec_stage = 0;
               _pulldoor=0;
             }  
           // BPS_LOG(DEBUG) << "PULL door is closed.";
