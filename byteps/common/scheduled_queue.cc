@@ -344,7 +344,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
       else{
             if(!_pulldoor) {
               forward_dynamic_size = _forward_exec[_exec_stage];
-              BPS_LOG(INFO) << "exec_stage: " << _exec_stage << " initilized." << "beginning dynamic size:"<< forward_dynamic_size;
+              BPS_LOG(INFO) << "exec_stage: " << _exec_stage << " initilized." << "  beginning dynamic size:"<< forward_dynamic_size;
             }
             if(!_mystack.empty() && task -> priority != _mystack.top())continue;
             if(!_mystack.empty() && forward_dynamic_size > task -> len){
@@ -455,7 +455,7 @@ void BytePSScheduledQueue::reportFinish(int size) {
   }
   if(_qt == PULL)
   {
-    _pulldoor--;
+    if(_pulldoor > 0)_pulldoor--;
     BPS_LOG(INFO) << "PULL PROCESS FINISH: pulldoor value is:" << _pulldoor;
     if(!_pulldoor)_exec_stage++;
   }
