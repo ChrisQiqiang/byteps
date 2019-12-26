@@ -76,8 +76,8 @@ BytePSScheduledQueue::BytePSScheduledQueue(QueueType type) {
       if (BytePSGlobal::IsRootDevice()) {
         _rt = BytePSGlobal::GetPullTable();
       }
-      dynamic_size = _execution[_sizepointer + 1];
-      // _sizepointer=1;
+      // dynamic_size = _backward_exec[_sizepointer + 1];
+      _sizepointer=1;
       break;
     default:
       break;
@@ -198,7 +198,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
             if(!_mystack.empty() &&  _mystack.top() * -1 == _grad_checkpoint[_pointer - 1] + 1 )
             {
                 _dequeue = 1;
-                dynamic_size = _execution[_sizepointer++];               
+                dynamic_size = _backward_exec[_sizepointer++];               
                 BPS_LOG(DEBUG) << "enqueue operation of one stage is over." << "_sizepointer:" << _sizepointer << "mystack top is: " << _mystack.top();
                 break;
                 ///////////////////////////initialize dynamic size of this gradient stage.////////////////////////////
@@ -263,33 +263,106 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
         recorderTs(task);
         return task;
     }
-/////pull process scheduler///
-    // if(_qt == PULL && tmp.find("gradient") != tmp.npos )
-    // { 
-    //   if(task -> priority == 0)_meetzero = 1;
-    //   if(!_meetzero){
-    //       if(dynamic_size > task -> len) {
-    //           dynamic_size -= task ->len;
-    //           _sq.erase(it);
-    //           task->ready_event = nullptr;
-    //           // Add for profiling communication traces
-    //           recorderTs(task);
-    //           return task;
-    //         }
-    //       else{
-    //         _sizepointer++;
-    //         if(_sizepointer == 12 )
-    //         dynamic_size = _execution[_sizepointer + 1];
-    //       }
-    //   }
-    //   else if(!dooropen){
-    //       BPS_LOG(DEBUG) << "PULL door is closed.";
-    //       break;
-    //   }
-    //   else{
-    //     dooropen--;
+///pull process scheduler
+//before meetzero, push block size should be equal with the execution time of next gradient block, 
+//           while pull block size should be equal with the execution time of the next next gradient block.
+//after meetzero, push should utilize full bandwidth,
+//          while pull should overlap the forward execution time.
 
-    //   }
+    if(_qt == PULL && tmp.find("gradient") != tmp.npos )
+    { 
+        if(_dequeue != 1){
+          // BPS_LOG(DEBUG) << "Position 1" << " pointer: " <<  _pointer <<" stagestart: " << _stagestart << " mystack empty:" <<  _mystack.empty() \
+          //       << "task name: " << task -> tensor_name << "restpart: " << _restpart; 
+          bool taskisstart = task -> priority == -1 * _grad_checkpoint[_pointer]  && _stagestart ;
+          bool taskisproc = !_mystack.empty() && task -> priority > -1 * _grad_checkpoint[_pointer] \ 
+                    && task -> priority  < -1 * _grad_checkpoint[_pointer - 1] \
+                    && task -> priority == _mystack.top() + 1;
+          bool starttagged = _stagestart && _tensor_part[_grad_checkpoint[_pointer]] ;
+          bool proctagged = !_mystack.empty() && _tensor_part[(_mystack.top() + 1) * -1] \
+                    && _mystack.top() + 1 > -1 * _grad_checkpoint[_pointer] \ 
+                    && _mystack.top() + 1  < -1 * _grad_checkpoint[_pointer - 1];                                    ;
+          // if(!_mystack.empty() && _mystack.top() == -156) 
+          //   BPS_LOG(DEBUG) << "proctagged when top is -156: " << proctagged; 
+          if( taskisstart || taskisproc || starttagged || proctagged)
+          {
+            if(starttagged)
+              for(int x = 0; x < _tensor_part[_grad_checkpoint[_pointer]]; x++){
+                _mystack.push(_grad_checkpoint[_pointer] * -1);
+                _stagestart = 0;
+                BPS_LOG(DEBUG) << "PULL: ENQUEUE at start element not firstly: " << _grad_checkpoint[_pointer] * -1 << " mystack size: " << _mystack.size() ;
+              }
+            
+            else if(proctagged){
+              int tmp = _mystack.top() + 1;
+              for(int x = 0; x < _tensor_part[tmp * -1]; x++){
+                _mystack.push(tmp);
+                BPS_LOG(DEBUG) << "PULL: ENQUEUE in proc element not firstly: " << tmp  << " mystack size: " << _mystack.size();
+              }
+            }
+
+  
+            else {
+              if(taskisstart) _stagestart = 0; 
+              _tensor_part[task -> priority * -1] = task -> total_partnum;
+              for(int x = 0; x< task -> total_partnum; x++){
+                _mystack.push(task -> priority);
+                BPS_LOG(DEBUG) << "PULL: ENQUEUE element firstly: " << task -> priority << "The rest part num of this priority tensor is: " << _restpart;
+              }
+            }
+            if(!_mystack.empty() &&  _mystack.top() * -1 == _grad_checkpoint[_pointer - 1] + 1 )
+            {
+                _dequeue = 1;
+                dynamic_size = _backward_exec[_sizepointer++];               
+                BPS_LOG(DEBUG) << "PULL: enqueue operation of one stage is over." << "_sizepointer:" << _sizepointer << "mystack top is: " << _mystack.top();
+                break;
+                ///////////////////////////initialize dynamic size of this gradient stage.////////////////////////////
+            }
+          }
+          continue;
+        }  
+
+      if(task -> priority == 0)_meetzero = 1;
+      if(!_meetzero)
+        {
+            if(task -> priority !=  _mystack.top())continue; 
+            if(dynamic_size > task -> len){
+              dynamic_size -= task -> len;
+              BPS_LOG(DEBUG) << "PULL: dequeue element: " << task -> tensor_name << "dynamic size now is: " << dynamic_size;
+              _sq.erase(it);
+              _mystack.pop();
+              BPS_LOG(DEBUG) << "PULL: gradient before 0: " << tmp ;
+            }
+            else{   //nxet stage enstack could begin.
+              _dequeue = 0;
+              _pointer--;
+              _stagestart = 1;
+              BPS_LOG(DEBUG) << "PULL: No left size. Waiting for next gradient block.";
+              break;  
+            }      
+        }
+      else{
+          if(!_pulldoor) forward_dynamic_size = _forward_exec[_exec_stage];
+          if(task -> priority != _mystack.top())continue;
+          if(forward_dynamic_size > task -> len){
+             _sq.erase(it);
+             _mystack.pop();
+            forward_dynamic_size -= task -> len;
+            _pulldoor++;
+          }
+          else if(_mystack.top() < -1 * _grad_checkpoint[_exec_stage + 1])
+          BPS_LOG(DEBUG) << "PULL door is closed.";
+          break;
+      }
+ 
+//Detail: meetzero, pull the first stage immediately. When the stage1 is running, we could transfer `S = forward_stage1_time * bandwidth` data.
+//      pull_stack pop over under limit of S, if  pull_stack.top() > stage2_end ; else pull_stack.pop() until pull_stack.top() > stage2_end.
+//      num++ as pull_stack pop elements. _pulldoor = num;
+//      if _pulldoor = 0, stage++.
+        
+
+
+      
 
 
     // }
@@ -357,6 +430,11 @@ void BytePSScheduledQueue::reportFinish(int size) {
               _dooropen++;
          }       
          // BPS_LOG(DEBUG) << "door open value:" << _dooropen;
+  }
+  if(_qt == PULL)
+  {
+    _pulldoor--;
+    if(!_pulldoor)_exec_stage++;
   }
   return;
 }
