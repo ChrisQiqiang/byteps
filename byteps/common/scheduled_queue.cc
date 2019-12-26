@@ -307,12 +307,13 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
                 BPS_LOG(INFO) << "PULL: ENQUEUE element firstly: " << task -> priority ;
               }
             }
+
             if(!_mystack.empty() &&  _mystack.top() * -1 == _grad_checkpoint[_pointer - 1] + 1 )
             {
                 _dequeue = 1;
                 // dynamic_size = _backward_exec[_sizepointer] > _backward_exec[_sizepointer - 1] ? _backward_exec[_sizepointer - 1] : _backward_exec[_sizepointer];               
                 dynamic_size = _backward_exec[_sizepointer++];
-                BPS_LOG(INFO) << "PULL: enqueue operation of one stage is over." << "  _sizepointer:" << _sizepointer << "  mystack top is: " << _mystack.top();
+                BPS_LOG(INFO) << "PULL: enqueue operation of one stage is over." << "  _sizepointer:" << _sizepointer - 1 << "  mystack top is: " << _mystack.top();
                 break;
                 ///////////////////////////initialize dynamic size of this gradient stage.////////////////////////////
             }
@@ -320,13 +321,14 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
           continue;
         }  
 
-      if(_tensor_part[0] && task -> priority == 0)_meetzero = 1;
-      
-      if(!_meetzero)
+      if(_tensor_part[0] && task -> priority == 0){
+        _meetzero = 1;
+        BPS_LOG(INFO) << "Meet zero.";
+      }  
+      if(_exec_stage < 13)
         {
-          BPS_LOG(INFO)<< "position 1";
             if(task -> priority !=  _mystack.top())continue; 
-            _noleftsize = 1;
+            // _noleftsize = 1;
             if(dynamic_size > task -> len){
               dynamic_size -= task -> len;
               BPS_LOG(INFO) << "PULL: dequeue element: " << task -> tensor_name << "dynamic size now is: " << dynamic_size;
@@ -349,25 +351,14 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
             }      //maybe no left size, but has no time to search the next one before meetzero;
         }
         else {
-          BPS_LOG(INFO)<< "position 2 ";
-            if(_noleftsize && _sizepointer < 12){
-                _dequeue = 0;
-                _noleftsize = 0;
-                _pointer--;
-                _stagestart = 1;
-                BPS_LOG(INFO) << "REINTILIZE DEQUE ,POINTER AND STAGESTART.";
-                break;
-            }
             if(!_pulldoor) {
               forward_dynamic_size = _forward_exec[_exec_stage];
               // BPS_LOG(INFO) << "exec_stage: " << _exec_stage << " initilized." << "  beginning dynamic size:"<< forward_dynamic_size;
             }
-            if(!_mystack.empty() && task -> priority != _mystack.top()){
-              BPS_LOG(INFO)<< "position 3 ";
+            if(!_mystack.empty() && task -> priority != _mystack.top())
               continue;
-            }
-             BPS_LOG(INFO)<< "position 4 ";
-            if(!_mystack.empty() && (forward_dynamic_size > task -> len || _exec_stage >= 13)){
+        
+            if(!_mystack.empty() && (forward_dynamic_size > task -> len || _exec_stage > 12)){
               _sq.erase(it);
               _mystack.pop();
               forward_dynamic_size -= task -> len;
@@ -375,6 +366,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
               BPS_LOG(INFO) << "PULL: dequeue after zero: " << task -> tensor_name << "  _exec_stage is:" << _exec_stage << "  forward dynamic size:" \
                   << forward_dynamic_size << "  pull door val is:" <<  _pulldoor;
             }
+
             else if(!_mystack.empty() && _mystack.top() >= -1 * _grad_checkpoint[_exec_stage + 1]){
               _sq.erase(it);
               _mystack.pop();
@@ -382,17 +374,18 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
               BPS_LOG(INFO) << "PULL: dequeue after zero enforced: " << task -> tensor_name << "  _exec_stage is:" << _exec_stage <<  "   forward dynamic size:"  \
                 << forward_dynamic_size << "  pull door val is:" <<  _pulldoor;
             }
+
             else{
               if(!_stagepullnum && _pulldoor){
                 _stagepullnum = _pulldoor;
                 BPS_LOG(INFO) << "initilize stagepullnum at stage "<< _exec_stage << ":  " << _stagepullnum;
               }
-              if(_sizepointer < 12){
-                _dequeue = 0;
-                _pointer--;
-                _stagestart = 1;
-              BPS_LOG(INFO) << "REINTILIZE DEQUE ,POINTER AND STAGESTART.";
-              }
+              // if(_sizepointer < 12){
+              //   _dequeue = 0;
+              //   _pointer--;
+              //   _stagestart = 1;
+              // BPS_LOG(INFO) << "REINTILIZE DEQUE ,POINTER AND STAGESTART.";
+              // }
               break;
             } 
             if(_mystack.empty())//reset parameter
@@ -408,12 +401,12 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
               _stagepullnum = 0;
               _pulldoor=0;
             }  
-            if(!_mystack.empty() && _sizepointer < 12){
-                _dequeue = 0;
-                _pointer--;
-                _stagestart = 1;
-                BPS_LOG(INFO) << "REINTILIZE DEQUE ,POINTER AND STAGESTART.";
-            }
+            // if(!_mystack.empty() && _sizepointer < 12){
+            //     _dequeue = 0;
+            //     _pointer--;
+            //     _stagestart = 1;
+            //     BPS_LOG(INFO) << "REINTILIZE DEQUE ,POINTER AND STAGESTART.";
+            // }
           // BPS_LOG(DEBUG) << "PULL door is closed.";
           // break;
           }
