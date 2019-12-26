@@ -351,14 +351,16 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
               _sq.erase(it);
               _mystack.pop();
               forward_dynamic_size -= task -> len;
-              BPS_LOG(INFO) << "dequeue after zero: " << task -> tensor_name << "   dynamic size:" << forward_dynamic_size;
               _pulldoor++;
+              BPS_LOG(INFO) << "dequeue after zero: " << task -> tensor_name << "  forward dynamic size:" \
+                  << forward_dynamic_size << "pull door val is:" <<  _pulldoor;
             }
-            else if(_mystack.top() >= -1 * _grad_checkpoint[_exec_stage + 1]){
+            else if(!mystack.empty() && _mystack.top() >= -1 * _grad_checkpoint[_exec_stage + 1]){
               _sq.erase(it);
               _mystack.pop();
               _pulldoor++;
-              BPS_LOG(INFO) << "dequeue after zero: " << task -> tensor_name << "   dynamic size:" << forward_dynamic_size;
+              BPS_LOG(INFO) << "dequeue after zero enforced: " << task -> tensor_name << "   forward dynamic size:"  \
+                << forward_dynamic_size << "pull door val is:" <<  _pulldoor;
             }
             if(_mystack.empty())//reset parameter
             {
@@ -454,6 +456,7 @@ void BytePSScheduledQueue::reportFinish(int size) {
   if(_qt == PULL)
   {
     _pulldoor--;
+    BPS_LOG(INFO) << "PULL PROCESS FINISH: pulldoor value is:" << _pulldoor;
     if(!_pulldoor)_exec_stage++;
   }
   return;
