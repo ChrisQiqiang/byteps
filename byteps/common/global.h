@@ -159,6 +159,11 @@ class BytePSGlobal {
   static int _start_step;
   static int _end_step;
   static std::string _trace_dir;
+  
+  
+  static int pushsize[20] ; 
+
+
 
   static cudaStream_t* _copy_device2host_stream;
   static cudaStream_t* _copy_host2device_stream;
