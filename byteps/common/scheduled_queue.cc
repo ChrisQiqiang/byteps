@@ -154,9 +154,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
 
     if( _qt == PUSH && tmp.find("gradient") != tmp.npos ) 
     {
-          BPS_LOG(INFO) << "before initilize.";
-          xxx = 100;
-           BPS_LOG(INFO) << "after initilize.";
+      
           /////first  enqueue as the gradient block coming, then dequeue dynamically.
         if(_dequeue != 1){
           BPS_LOG(DEBUG) << "Position 1" << " pointer: " <<  _pointer <<" stagestart: " << _stagestart << " mystack empty:" <<  _mystack.empty() \
@@ -224,13 +222,16 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
               BPS_LOG(DEBUG) << "dequeue element: " << task -> tensor_name << "dynamic size now is: " << dynamic_size;
               _sq.erase(it);
               _mystack.pop();
+              _pushsize++;
               BPS_LOG(DEBUG) << "PUSH gradient before 0: " << tmp ;
             }
             else{   //nxet stage enstack could begin.
               _dequeue = 0;
               _pointer--;
               _stagestart = 1;
-              BPS_LOG(DEBUG) << "No left size. Waiting for next gradient block.";
+              BytePSGlobal::pushsize[_sizepointer] = _pushsize;
+              _pushsize = 0;
+              BPS_LOG(INFO) << "PUSH: No left size. Waiting for next gradient block." << "intilized global pushsize" << _sizepointer << ": " << BytePSGlobal::pushsize[_sizepointer];
               break;  
             }      
         }
@@ -258,6 +259,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
           _meetzero = 0;
           _sizepointer = 0;
           _dooropen = 11;
+           _pushsize = 0;
         //  _sizepointer =  _qt == PUSH ? 0:1;
         }
         task->ready_event = nullptr;
@@ -273,7 +275,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
 
     if(_qt == PULL && tmp.find("gradient") != tmp.npos )
     { 
-       BPS_LOG(INFO) << "xxx=" << xxx ;
+       //BPS_LOG(INFO) << "xxx=" << xxx ;
         if(_dequeue != 1 && _sizepointer < 13 ){
           // BPS_LOG(DEBUG) << "Position 1" << " pointer: " <<  _pointer <<" stagestart: " << _stagestart << " mystack empty:" <<  _mystack.empty() \
           //       << "task name: " << task -> tensor_name;
@@ -335,13 +337,17 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
             // _noleftsize = 1;
             if(dynamic_size > task -> len){
               dynamic_size -= task -> len;
-              BPS_LOG(TRACE) << "PULL: dequeue element: " << task -> tensor_name << "dynamic size now is: " << dynamic_size;
+              BPS_LOG(INFO) << "PULL: dequeue element: " << task -> tensor_name << "dynamic size now is: " << dynamic_size;
               _sq.erase(it);
               _mystack.pop();
-              if(!_sq.size() ){
+              _pullsize++;
+              BPS_LOG(INFO) << "PULL SIZE IS: " << _pullsize << " push size is:" << BytePSGlobal::pushsize[_sizepointer - 1];
+              if(!_sq.size() && _pullsize == BytePSGlobal::pushsize[_sizepointer - 1]){
                 _dequeue = 0; //&& dynamic_size < _backward_exec[]
                 _pointer--;
-                _stagestart = 1;            
+                _stagestart = 1;  
+                 
+                _pullsize = 0;         
                 BPS_LOG(TRACE) << "PULL: size is redundant, waiting...";
               }
               BPS_LOG(TRACE) << "PULL: gradient before 0: " << tmp << "meet zero: " << _meetzero;
@@ -350,6 +356,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
               _dequeue = 0;
               _pointer--;
               _stagestart = 1;
+              _pullsize = 0;
               BPS_LOG(TRACE) << "PULL: No left size. Waiting for next gradient block.";
               break;  
             }      //maybe no left size, but has no time to search the next one before meetzero;
@@ -400,6 +407,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
         _exec_stage = 0;
         _stagepullnum = 0;
         _pulldoor=0;
+        _pullsize = 0;
       }  
       task->ready_event = nullptr;
       // Add for profiling communication TRACEs
