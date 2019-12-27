@@ -29,7 +29,6 @@ namespace common {
 
 class BytePSScheduledQueue {
  public:
-  static int xxx;
   BytePSScheduledQueue(QueueType type);
   QueueType getQueueType() { return _qt; }
   void addTask(std::shared_ptr<TensorTableEntry>);
@@ -70,6 +69,8 @@ class BytePSScheduledQueue {
   int _pointer = 12;
   int _stagestart = 1;
   int dynamic_size ;
+
+   static int xxx;
 
 
 
