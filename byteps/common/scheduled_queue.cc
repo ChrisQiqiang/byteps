@@ -327,9 +327,8 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
     
       if(_sizepointer < 13)
         {
-            if(task -> priority !=  _mystack.top()){
+            if(task -> priority !=  _mystack.top() && _mystack.top() != BytePSGlobal::pushsize[_sizepointer - 1])
               continue;
-            } 
             // _noleftsize = 1;
             BPS_LOG(INFO) << "priority=" << task->priority << ", top=" << _mystack.top() << ", line=" << BytePSGlobal::pushsize[_sizepointer - 1]
             << " size=" << dynamic_size << " len=" << task->len;
