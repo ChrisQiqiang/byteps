@@ -152,9 +152,9 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
     task = *it;
   //  BPS_LOG(DEBUG) << _qt << " tensor name: " << tmp;
 
-    if( _qt == PUSH && tmp.find("gradient") != tmp.npos )  // || _qt == PULL
+    if( _qt == PUSH && tmp.find("gradient") != tmp.npos ) 
     {
-      BytePSScheduledQueue::xxx = 100;
+         BytePSScheduledQueue::xxx = 100;
           /////first  enqueue as the gradient block coming, then dequeue dynamically.
         if(_dequeue != 1){
           BPS_LOG(DEBUG) << "Position 1" << " pointer: " <<  _pointer <<" stagestart: " << _stagestart << " mystack empty:" <<  _mystack.empty() \
