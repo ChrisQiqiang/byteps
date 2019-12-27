@@ -229,7 +229,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
               _pointer--;
               _stagestart = 1;
               BytePSGlobal::pushsize[_sizepointer] = _mystack.top();
-              BPS_LOG(INFO) << "PUSH: No left size. Waiting for next gradient block." << "intilized global pushsize" << _sizepointer << ": " << BytePSGlobal::pushsize[_sizepointer];
+              //BPS_LOG(INFO) << "PUSH: No left size. Waiting for next gradient block." << "intilized global pushsize" << _sizepointer << ": " << BytePSGlobal::pushsize[_sizepointer];
               break;  
             }      
         }
@@ -326,11 +326,14 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
     
       if(_sizepointer < 13)
         {
-            if(task -> priority !=  _mystack.top())continue; 
+            if(task -> priority !=  _mystack.top()){
+              BPS_LOG(INFO) << "priority=" << task->priority << ", top=" << _mystack.top() << ", line=" << BytePSGlobal::pushsize[_sizepointer - 1] ;
+              continue;
+            } 
             // _noleftsize = 1;
             if(dynamic_size > task -> len && task -> priority > BytePSGlobal::pushsize[_sizepointer - 1]){
               dynamic_size -= task -> len;
-              BPS_LOG(INFO) << "PULL: dequeue element: " << task -> tensor_name << "dynamic size now is: " << dynamic_size \
+              //BPS_LOG(INFO) << "PULL: dequeue element: " << task -> tensor_name << "dynamic size now is: " << dynamic_size \
                   << "low bound is:" << BytePSGlobal::pushsize[_sizepointer - 1] ;
               _sq.erase(it);
               _mystack.pop();
