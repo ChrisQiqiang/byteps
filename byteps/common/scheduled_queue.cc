@@ -327,7 +327,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
     
       if(_sizepointer < 13)
         {
-            if(task -> priority !=  _mystack.top() && _mystack.top() != BytePSGlobal::pushsize[_sizepointer - 1])
+            if(task -> priority !=  _mystack.top())
               continue;
             // _noleftsize = 1;
             BPS_LOG(INFO) << "priority=" << task->priority << ", top=" << _mystack.top() << ", line=" << BytePSGlobal::pushsize[_sizepointer - 1]
@@ -359,7 +359,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
             }      //maybe no left size, but has no time to search the next one before meetzero;
         }
         else {
-            if(!_mystack.empty())continue;// has the problem about the line,cannot find the line.
+            if(!_mystack.empty() && task -> priority != _mystack.top())continue;
             if(!_pulldoor) {
               forward_dynamic_size = _forward_exec[_exec_stage];
               _stagepullnum = 0;
