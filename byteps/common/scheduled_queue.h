@@ -29,7 +29,7 @@ namespace common {
 
 class BytePSScheduledQueue {
  public:
-  static int xxx = 0;
+  static int xxx;
   BytePSScheduledQueue(QueueType type);
   QueueType getQueueType() { return _qt; }
   void addTask(std::shared_ptr<TensorTableEntry>);
