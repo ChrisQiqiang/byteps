@@ -336,8 +336,8 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
               BPS_LOG(TRACE) << "PULL: dequeue element: " << task -> tensor_name << "dynamic size now is: " << dynamic_size;
               _sq.erase(it);
               _mystack.pop();
-              if(!_sq.size() && dynamic_size < _backward_exec[]){
-                _dequeue = 0;
+              if(!_sq.size() ){
+                _dequeue = 0; //&& dynamic_size < _backward_exec[]
                 _pointer--;
                 _stagestart = 1;            
                 BPS_LOG(TRACE) << "PULL: size is redundant, waiting...";
