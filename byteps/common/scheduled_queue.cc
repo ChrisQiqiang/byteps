@@ -311,6 +311,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
               }
             }
 
+               // BPS_LOG(INFO) << "top=" << _mystack.top() << " ckpt" << (_grad_checkpoint[_pointer - 1] + 1 );
             if(!_mystack.empty() &&  _mystack.top() * -1 == _grad_checkpoint[_pointer - 1] + 1 )
             {
                 _dequeue = 1;
@@ -327,10 +328,11 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
       if(_sizepointer < 13)
         {
             if(task -> priority !=  _mystack.top()){
-              BPS_LOG(INFO) << "priority=" << task->priority << ", top=" << _mystack.top() << ", line=" << BytePSGlobal::pushsize[_sizepointer - 1] ;
               continue;
             } 
             // _noleftsize = 1;
+            BPS_LOG(INFO) << "priority=" << task->priority << ", top=" << _mystack.top() << ", line=" << BytePSGlobal::pushsize[_sizepointer - 1]
+            << " size=" << dynamic_size << " len=" << task->len;
             if(dynamic_size > task -> len && task -> priority > BytePSGlobal::pushsize[_sizepointer - 1]){
               dynamic_size -= task -> len;
               //BPS_LOG(INFO) << "PULL: dequeue element: " << task -> tensor_name << "dynamic size now is: " << dynamic_size \
