@@ -310,10 +310,9 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
 
             if(!_mystack.empty() &&  _mystack.top() * -1 == _grad_checkpoint[_pointer - 1] + 1 )
             {
-                _dequeue = 1;
-                // dynamic_size = _backward_exec[_sizepointer] > _backward_exec[_sizepointer - 1] ? _backward_exec[_sizepointer - 1] : _backward_exec[_sizepointer];               
+                _dequeue = 1;             
                 dynamic_size = _backward_exec[_sizepointer++];
-                BPS_LOG(INFO) << "PULL: enqueue operation of one stage is over." << "  _sizepointer:" << _sizepointer - 1 << "  mystack top is: " << _mystack.top();
+                BPS_LOG(INFO) << "PULL: enqueue operation of one stage is over." << "  _sizepointer:" << _sizepointer  << "  mystack top is: " << _mystack.top();
                 break;
                 ///////////////////////////initialize dynamic size of this gradient stage.////////////////////////////
             }
@@ -325,13 +324,13 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
         _meetzero = 1;
         BPS_LOG(INFO) << "Meet zero.";
       }  
-      if(_sizepointer < 13)
+      if(_sizepointer < 12)
         {
             if(task -> priority !=  _mystack.top())continue; 
             // _noleftsize = 1;
             if(dynamic_size > task -> len){
               dynamic_size -= task -> len;
-              BPS_LOG(INFO) << "PULL: dequeue element: " << task -> tensor_name << "dynamic size now is: " << dynamic_size;
+              BPS_LOG(INFO) << "PULL: dequeue element: " << task -> tensor_name << "  dynamic size now is: " << dynamic_size;
               _sq.erase(it);
               _mystack.pop();
               if(!_sq.size()){
@@ -340,7 +339,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
                 _stagestart = 1;
                 BPS_LOG(INFO) << "PULL: size is redundant, waiting...";
               }
-              BPS_LOG(INFO) << "PULL: gradient before 0: " << tmp << "meet zero: " << _meetzero;
+              BPS_LOG(INFO) << "PULL: gradient before 0: " << tmp << "  meet zero: " << _meetzero;
             }
             else{   //nxet stage enstack could begin.
               _dequeue = 0;
