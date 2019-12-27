@@ -270,7 +270,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
 
     if(_qt == PULL && tmp.find("gradient") != tmp.npos )
     { 
-        if(_dequeue != 1){
+        if(_dequeue != 1 && _sizepointer < 13 ){
           // BPS_LOG(DEBUG) << "Position 1" << " pointer: " <<  _pointer <<" stagestart: " << _stagestart << " mystack empty:" <<  _mystack.empty() \
           //       << "task name: " << task -> tensor_name;
           bool taskisstart = task -> priority == -1 * _grad_checkpoint[_pointer]  && _stagestart ;
@@ -325,7 +325,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
         _meetzero = 1;
         BPS_LOG(INFO) << "Meet zero.";
       }  
-      if(_sizepointer < 12)
+      if(_sizepointer < 13)
         {
             if(task -> priority !=  _mystack.top())continue; 
             // _noleftsize = 1;
