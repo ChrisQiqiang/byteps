@@ -228,7 +228,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
               _dequeue = 0;
               _pointer--;
               _stagestart = 1;
-              BytePSGlobal::pushsize[_sizepointer] = _mystack.top();
+              BytePSGlobal::pushsize[_sizepointer] = _mystack.top() + 1;
               //BPS_LOG(INFO) << "PUSH: No left size. Waiting for next gradient block." << "intilized global pushsize" << _sizepointer << ": " << BytePSGlobal::pushsize[_sizepointer];
               break;  
             }      
@@ -359,7 +359,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
             }      //maybe no left size, but has no time to search the next one before meetzero;
         }
         else {
-            if(!_mystack.empty() && task -> priority != _mystack.top())continue;
+            if(!_mystack.empty())continue;// has the problem about the line,cannot find the line.
             if(!_pulldoor) {
               forward_dynamic_size = _forward_exec[_exec_stage];
               _stagepullnum = 0;
