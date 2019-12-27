@@ -354,6 +354,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
             if(!_mystack.empty() && task -> priority != _mystack.top())continue;
             if(!_pulldoor) {
               forward_dynamic_size = _forward_exec[_exec_stage];
+              _stagepullnum = 0;
               BPS_LOG(INFO) << "exec_stage: " << _exec_stage << " initilized." << "  beginning dynamic size:"<< forward_dynamic_size;
             }
             if(!_mystack.empty() && (forward_dynamic_size > task -> len || _exec_stage > 12)){
@@ -378,37 +379,24 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
                 _stagepullnum = _pulldoor;
                 BPS_LOG(INFO) << "initilize stagepullnum at stage "<< _exec_stage << ":  " << _stagepullnum;
               }
-              // if(_sizepointer < 12){
-              //   _dequeue = 0;
-              //   _pointer--;
-              //   _stagestart = 1;
-              // BPS_LOG(INFO) << "REINTILIZE DEQUE ,POINTER AND STAGESTART.";
-              // }
               break;
             } 
-            if(_mystack.empty())//reset parameter
-            {
-              BPS_LOG(INFO) << "Clear.";
-              _dequeue = 0;
-              _pointer = 12;
-              _stagestart = 1;
-              _meetzero = 0;
-              _sizepointer = 1;//different from push process
-              // _dooropen = 11;
-              _exec_stage = 0;
-              _stagepullnum = 0;
-              _pulldoor=0;
-            }  
-            // if(!_mystack.empty() && _sizepointer < 12){
-            //     _dequeue = 0;
-            //     _pointer--;
-            //     _stagestart = 1;
-            //     BPS_LOG(INFO) << "REINTILIZE DEQUE ,POINTER AND STAGESTART.";
-            // }
           // BPS_LOG(DEBUG) << "PULL door is closed.";
           // break;
           }
-
+      if(_sizepointer == 13 && !_stagepullnum &&_mystack.empty())//reset parameter
+      {
+        BPS_LOG(INFO) << "Clear.";
+        _dequeue = 0;
+        _pointer = 12;
+        _stagestart = 1;
+        _meetzero = 0;
+        _sizepointer = 1;//different from push process
+        // _dooropen = 11;
+        _exec_stage = 0;
+        _stagepullnum = 0;
+        _pulldoor=0;
+      }  
       task->ready_event = nullptr;
       // Add for profiling communication traces
       recorderTs(task);
