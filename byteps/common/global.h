@@ -109,7 +109,8 @@ class BytePSGlobal {
 
   // for non-root
   static ReadyTable* GetCopyTable() { return _copy_table; }
-
+  
+  static int pushsize[20] ; 
   static std::shared_ptr<NcclManager> GetNccl() { return _nccl_manager; }
   static std::shared_ptr<CpuReducer> GetCpuReducer() { return _cpu_reducer; }
 
@@ -159,9 +160,6 @@ class BytePSGlobal {
   static int _start_step;
   static int _end_step;
   static std::string _trace_dir;
-  
-  
-  static int pushsize[20] ; 
 
 
 
