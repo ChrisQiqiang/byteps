@@ -333,7 +333,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
             // _noleftsize = 1;
             BPS_LOG(INFO) << "priority=" << task->priority << ", top=" << _mystack.top() << ", line=" << BytePSGlobal::pushsize[_sizepointer - 1]
             << " size=" << dynamic_size << " len=" << task->len;
-            if(dynamic_size > task -> len && task -> priority > BytePSGlobal::pushsize[_sizepointer - 1]){
+            if(dynamic_size > task -> len && task -> priority > BytePSGlobal::pushsize[_sizepointer - 2]){
               dynamic_size -= task -> len;
               //BPS_LOG(INFO) << "PULL: dequeue element: " << task -> tensor_name << "dynamic size now is: " << dynamic_size \
                   << "low bound is:" << BytePSGlobal::pushsize[_sizepointer - 1] ;
