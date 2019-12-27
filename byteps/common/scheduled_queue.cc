@@ -289,14 +289,14 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
               for(int x = 0; x < _tensor_part[_grad_checkpoint[_pointer]]; x++){
                 _mystack.push(_grad_checkpoint[_pointer] * -1);
                 _stagestart = 0;
-                BPS_LOG(INFO) << "PULL: ENQUEUE at start element not firstly: " << _grad_checkpoint[_pointer] * -1 << " mystack size: " << _mystack.size() ;
+                BPS_LOG(INFO) << "PULL: ENQUEUE at start element not firstly: " << _grad_checkpoint[_pointer] * -1 << " mystack size: " << _mystack.size() << "  sizepointer: " << _sizepointer;
               }
             
             else if(proctagged){
               int tmp = _mystack.top() + 1;
               for(int x = 0; x < _tensor_part[tmp * -1]; x++){
                 _mystack.push(tmp);
-                BPS_LOG(INFO) << "PULL: ENQUEUE in proc element not firstly: " << tmp  << " mystack size: " << _mystack.size();
+                BPS_LOG(INFO) << "PULL: ENQUEUE in proc element not firstly: " << tmp  << " mystack size: " << _mystack.size() << "  sizepointer: " << _sizepointer;
               }
             }
             else {
@@ -304,7 +304,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
               _tensor_part[task -> priority * -1] = task -> total_partnum;
               for(int x = 0; x< task -> total_partnum; x++){
                 _mystack.push(task -> priority);
-                BPS_LOG(INFO) << "PULL: ENQUEUE element firstly: " << task -> priority ;
+                BPS_LOG(INFO) << "PULL: ENQUEUE element firstly: " << task -> priority << "  sizepointer: " << _sizepointer ;
               }
             }
 
@@ -313,7 +313,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
                 _dequeue = 1;
                 // dynamic_size = _backward_exec[_sizepointer] > _backward_exec[_sizepointer - 1] ? _backward_exec[_sizepointer - 1] : _backward_exec[_sizepointer];               
                 dynamic_size = _backward_exec[_sizepointer++];
-                BPS_LOG(INFO) << "PULL: enqueue operation of one stage is over." << "  _sizepointer:" << _sizepointer - 1 << "  mystack top is: " << _mystack.top();
+                BPS_LOG(INFO) << "PULL: enqueue operation of one stage is over." << "  _sizepointer:" << _sizepointer << "  mystack top is: " << _mystack.top();
                 break;
                 ///////////////////////////initialize dynamic size of this gradient stage.////////////////////////////
             }
@@ -351,13 +351,11 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
             }      //maybe no left size, but has no time to search the next one before meetzero;
         }
         else {
+            if(!_mystack.empty() && task -> priority != _mystack.top())continue;
             if(!_pulldoor) {
               forward_dynamic_size = _forward_exec[_exec_stage];
-              // BPS_LOG(INFO) << "exec_stage: " << _exec_stage << " initilized." << "  beginning dynamic size:"<< forward_dynamic_size;
+              BPS_LOG(INFO) << "exec_stage: " << _exec_stage << " initilized." << "  beginning dynamic size:"<< forward_dynamic_size;
             }
-            if(!_mystack.empty() && task -> priority != _mystack.top())
-              continue;
-        
             if(!_mystack.empty() && (forward_dynamic_size > task -> len || _exec_stage > 12)){
               _sq.erase(it);
               _mystack.pop();
