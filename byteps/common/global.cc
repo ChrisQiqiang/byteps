@@ -297,7 +297,7 @@ void BytePSGlobal::Shutdown() {
 
   while (!IsAllThreadFinish(total_thread_num)) {
     // wait until all threads joined
-    std::this_thread::sleep_for(std::chrono::nanoseconds(1000));
+    std::this_thread::sleep_for(std::chrono::nanoseconds(100));
   }
 
   for (size_t i = 0; i < QueueNum; i++) {
