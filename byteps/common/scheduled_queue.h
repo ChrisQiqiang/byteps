@@ -26,7 +26,7 @@
 
 namespace byteps {
 namespace common {
-
+int xxx = 0;
 class BytePSScheduledQueue {
  public:
   BytePSScheduledQueue(QueueType type);
@@ -69,7 +69,7 @@ class BytePSScheduledQueue {
   int _pointer = 12;
   int _stagestart = 1;
   int dynamic_size ;
-  int xxx;
+  // int xxx;
 
 
 
