@@ -69,8 +69,7 @@ class BytePSScheduledQueue {
   int _pointer = 12;
   int _stagestart = 1;
   int dynamic_size ;
-
-   static int xxx;
+  int xxx;
 
 
 
