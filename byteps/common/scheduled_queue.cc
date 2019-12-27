@@ -425,7 +425,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
     }
     _sq.erase(it);
     BPS_CHECK(task->tensor_name != "");
-    BPS_LOG(INFO) << "Queue " << LogStrings[_qt]
+    BPS_LOG(DEBUG) << "Queue " << LogStrings[_qt]
                    << " getTask: " << task->tensor_name << " key: " << task->key
                    << " rank: " << BytePSGlobal::GetLocalRank();  
     task->ready_event = nullptr;
@@ -452,7 +452,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask(uint64_t key) {
     _sq.erase(it);
 
     BPS_CHECK(task->tensor_name != "");
-    BPS_LOG(INFO) << "Queue " << LogStrings[_qt]
+    BPS_LOG(DEBUG) << "Queue " << LogStrings[_qt]
                    << " getTask(key): " << task->tensor_name
                    << " key: " << task->key
                    << " rank: " << BytePSGlobal::GetLocalRank();
