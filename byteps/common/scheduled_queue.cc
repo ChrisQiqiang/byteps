@@ -229,7 +229,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
               _pointer--;
               _stagestart = 1;
               BytePSGlobal::pushsize[_sizepointer] = _mystack.top();
-              BPS_LOG(TRACE) << "PUSH: No left size. Waiting for next gradient block." << "intilized global pushsize" << _sizepointer << ": " << BytePSGlobal::pushsize[_sizepointer];
+              BPS_LOG(INFO) << "PUSH: No left size. Waiting for next gradient block." << "intilized global pushsize" << _sizepointer << ": " << BytePSGlobal::pushsize[_sizepointer];
               break;  
             }      
         }
@@ -273,7 +273,6 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
 
     if(_qt == PULL && tmp.find("gradient") != tmp.npos )
     { 
-       //BPS_LOG(TRACE) << "xxx=" << xxx ;
         if(_dequeue != 1 && _sizepointer < 13 ){
           // BPS_LOG(DEBUG) << "Position 1" << " pointer: " <<  _pointer <<" stagestart: " << _stagestart << " mystack empty:" <<  _mystack.empty() \
           //       << "task name: " << task -> tensor_name;
@@ -324,11 +323,6 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
           }
           continue;
         }  
-
-      if(_tensor_part[0] && task -> priority == 0){
-        _meetzero = 1;
-        BPS_LOG(TRACE) << "Meet zero.";
-      }  
     
       if(_sizepointer < 13)
         {
@@ -336,7 +330,8 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
             // _noleftsize = 1;
             if(dynamic_size > task -> len && task -> priority > BytePSGlobal::pushsize[_sizepointer - 1]){
               dynamic_size -= task -> len;
-              BPS_LOG(TRACE) << "PULL: dequeue element: " << task -> tensor_name << "dynamic size now is: " << dynamic_size;
+              BPS_LOG(INFO) << "PULL: dequeue element: " << task -> tensor_name << "dynamic size now is: " << dynamic_size \
+                  << "low bound is:" << BytePSGlobal::pushsize[_sizepointer - 1] ;
               _sq.erase(it);
               _mystack.pop();
               // _pullsize++;
