@@ -325,7 +325,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
         _meetzero = 1;
         BPS_LOG(INFO) << "Meet zero.";
       }  
-      if(_sizepointer < 13)
+      if(_sizepointer < 12)
         {
             if(task -> priority !=  _mystack.top())continue; 
             // _noleftsize = 1;
