@@ -100,7 +100,7 @@ void BytePSScheduledQueue::addTask(std::shared_ptr<TensorTableEntry> entry) {
         });
   }
   BPS_CHECK(entry->tensor_name != "");
-  BPS_LOG(TRACE) << "Queue " << LogStrings[_qt]
+  BPS_LOG(DEBUG) << "Queue " << LogStrings[_qt]
                  << " addTask: " << entry->tensor_name << " key: " << entry->key
                  << " rank: " << BytePSGlobal::GetLocalRank();
   return;
@@ -152,8 +152,9 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
     task = *it;
   //  BPS_LOG(DEBUG) << _qt << " tensor name: " << tmp;
 
-    if( _qt == PUSH && tmp.find("gradient") != tmp.npos )  // || _qt == PULL
+    if( _qt == PUSH && tmp.find("gradient") != tmp.npos ) 
     {
+      
           /////first  enqueue as the gradient block coming, then dequeue dynamically.
         if(_dequeue != 1){
           BPS_LOG(DEBUG) << "Position 1" << " pointer: " <<  _pointer <<" stagestart: " << _stagestart << " mystack empty:" <<  _mystack.empty() \
@@ -227,7 +228,8 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
               _dequeue = 0;
               _pointer--;
               _stagestart = 1;
-              BPS_LOG(DEBUG) << "No left size. Waiting for next gradient block.";
+              BytePSGlobal::pushsize[_sizepointer] = _mystack.top() + 1;
+              //BPS_LOG(TRACE) << "PUSH: No left size. Waiting for next gradient block." << "intilized global pushsize" << _sizepointer << ": " << BytePSGlobal::pushsize[_sizepointer];
               break;  
             }      
         }
@@ -249,16 +251,15 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
         {
           BPS_LOG(DEBUG) << "Clear.";
           _dequeue = 0;
-
           _pointer = 12;
           _stagestart = 1;
           _meetzero = 0;
           _sizepointer = 0;
           _dooropen = 11;
-        //  _sizepointer =  _qt == PUSH ? 0:1;
+          //  _pushsize = 0;
         }
         task->ready_event = nullptr;
-        // Add for profiling communication traces
+        // Add for profiling communication TRACEs
         recorderTs(task);
         return task;
     }
@@ -268,153 +269,143 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
 //after meetzero, push should utilize full bandwidth,
 //          while pull should overlap the forward execution time.
 
-    if(_qt == PULL && tmp.find("gradient") != tmp.npos )
-    { 
-        if(_dequeue != 1){
-          // BPS_LOG(DEBUG) << "Position 1" << " pointer: " <<  _pointer <<" stagestart: " << _stagestart << " mystack empty:" <<  _mystack.empty() \
-          //       << "task name: " << task -> tensor_name;
-          bool taskisstart = task -> priority == -1 * _grad_checkpoint[_pointer]  && _stagestart ;
-          bool taskisproc = !_mystack.empty() && task -> priority > -1 * _grad_checkpoint[_pointer] \ 
-                    && task -> priority  < -1 * _grad_checkpoint[_pointer - 1] \
-                    && task -> priority == _mystack.top() + 1;
-          bool starttagged = _stagestart && _tensor_part[_grad_checkpoint[_pointer]] ;
-          bool proctagged = !_mystack.empty() && _tensor_part[(_mystack.top() + 1) * -1] \
-                    && _mystack.top() + 1 > -1 * _grad_checkpoint[_pointer] \ 
-                    && _mystack.top() + 1  < -1 * _grad_checkpoint[_pointer - 1];                                    ;
-          // if(!_mystack.empty() && _mystack.top() == -156) 
-          //   BPS_LOG(DEBUG) << "proctagged when top is -156: " << proctagged; 
-          if( taskisstart || taskisproc || starttagged || proctagged)
-          {
-            if(starttagged)
-              for(int x = 0; x < _tensor_part[_grad_checkpoint[_pointer]]; x++){
-                _mystack.push(_grad_checkpoint[_pointer] * -1);
-                _stagestart = 0;
-                BPS_LOG(INFO) << "PULL: ENQUEUE at start element not firstly: " << _grad_checkpoint[_pointer] * -1 << " mystack size: " << _mystack.size() ;
-              }
+    // if(_qt == PULL && tmp.find("gradient") != tmp.npos )
+    // { 
+    //     if(_dequeue != 1 && _sizepointer < 13 ){
+    //       // BPS_LOG(DEBUG) << "Position 1" << " pointer: " <<  _pointer <<" stagestart: " << _stagestart << " mystack empty:" <<  _mystack.empty() \
+    //       //       << "task name: " << task -> tensor_name;
+    //       bool taskisstart = task -> priority == -1 * _grad_checkpoint[_pointer]  && _stagestart ;
+    //       bool taskisproc = !_mystack.empty() && task -> priority > -1 * _grad_checkpoint[_pointer] \ 
+    //                 && task -> priority  < -1 * _grad_checkpoint[_pointer - 1] \
+    //                 && task -> priority == _mystack.top() + 1;
+    //       bool starttagged = _stagestart && _tensor_part[_grad_checkpoint[_pointer]] ;
+    //       bool proctagged = !_mystack.empty() && _tensor_part[(_mystack.top() + 1) * -1] \
+    //                 && _mystack.top() + 1 > -1 * _grad_checkpoint[_pointer] \ 
+    //                 && _mystack.top() + 1  < -1 * _grad_checkpoint[_pointer - 1];                                    ;
+    //       // if(!_mystack.empty() && _mystack.top() == -156) 
+    //       //   BPS_LOG(DEBUG) << "proctagged when top is -156: " << proctagged; 
+    //       if( taskisstart || taskisproc || starttagged || proctagged)
+    //       {
+    //         if(starttagged)
+    //           for(int x = 0; x < _tensor_part[_grad_checkpoint[_pointer]]; x++){
+    //             _mystack.push(_grad_checkpoint[_pointer] * -1);
+    //             _stagestart = 0;
+    //             BPS_LOG(TRACE) << "PULL: ENQUEUE at start element not firstly: " << _grad_checkpoint[_pointer] * -1 << " mystack size: " << _mystack.size() << "  sizepointer: " << _sizepointer;
+    //           }
             
-            else if(proctagged){
-              int tmp = _mystack.top() + 1;
-              for(int x = 0; x < _tensor_part[tmp * -1]; x++){
-                _mystack.push(tmp);
-                BPS_LOG(INFO) << "PULL: ENQUEUE in proc element not firstly: " << tmp  << " mystack size: " << _mystack.size();
-              }
-            }
-            else {
-              if(taskisstart) _stagestart = 0; 
-              _tensor_part[task -> priority * -1] = task -> total_partnum;
-              for(int x = 0; x< task -> total_partnum; x++){
-                _mystack.push(task -> priority);
-                BPS_LOG(INFO) << "PULL: ENQUEUE element firstly: " << task -> priority ;
-              }
-            }
+    //         else if(proctagged){
+    //           int tmp = _mystack.top() + 1;
+    //           for(int x = 0; x < _tensor_part[tmp * -1]; x++){
+    //             _mystack.push(tmp);
+    //             BPS_LOG(TRACE) << "PULL: ENQUEUE in proc element not firstly: " << tmp  << " mystack size: " << _mystack.size() << "  sizepointer: " << _sizepointer;
+    //           }
+    //         }
+    //         else {
+    //           if(taskisstart) _stagestart = 0; 
+    //           _tensor_part[task -> priority * -1] = task -> total_partnum;
+    //           for(int x = 0; x< task -> total_partnum; x++){
+    //             _mystack.push(task -> priority);
+    //             BPS_LOG(TRACE) << "PULL: ENQUEUE element firstly: " << task -> priority << "  sizepointer: " << _sizepointer ;
+    //           }
+    //         }
 
-            if(!_mystack.empty() &&  _mystack.top() * -1 == _grad_checkpoint[_pointer - 1] + 1 )
-            {
-                _dequeue = 1;             
-                dynamic_size = _backward_exec[_sizepointer++];
-                BPS_LOG(INFO) << "PULL: enqueue operation of one stage is over." << "  _sizepointer:" << _sizepointer  << "  mystack top is: " << _mystack.top();
-                break;
-                ///////////////////////////initialize dynamic size of this gradient stage.////////////////////////////
-            }
-          }
-          continue;
-        }  
+    //            // BPS_LOG(TRACE) << "top=" << _mystack.top() << " ckpt" << (_grad_checkpoint[_pointer - 1] + 1 );
+    //         if(!_mystack.empty() &&  _mystack.top() * -1 == _grad_checkpoint[_pointer - 1] + 1 )
+    //         {
+    //             _dequeue = 1;             
+    //             dynamic_size = _backward_exec[_sizepointer++];
+    //             BPS_LOG(TRACE) << "PULL: enqueue operation of one stage is over." << "  _sizepointer:" << _sizepointer << "  mystack top is: " << _mystack.top();
+    //             break;
+    //             ///////////////////////////initialize dynamic size of this gradient stage.////////////////////////////
+    //         }
+    //       }
+    //       continue;
+    //     }  
+    
+    //   if(_sizepointer < 13)
+    //     {
+    //         if(task -> priority !=  _mystack.top())
+    //           continue;
+    //         // _noleftsize = 1;
+    //         BPS_LOG(TRACE) << "priority=" << task->priority << ", top=" << _mystack.top() << ", line=" << BytePSGlobal::pushsize[_sizepointer - 1]
+    //         << " size=" << dynamic_size << " len=" << task->len;
+    //         if(dynamic_size > task -> len && task -> priority > BytePSGlobal::pushsize[_sizepointer - 1]){
+    //           dynamic_size -= task -> len;
+    //           //BPS_LOG(TRACE) << "PULL: dequeue element: " << task -> tensor_name << "dynamic size now is: " << dynamic_size \
+    //               << "low bound is:" << BytePSGlobal::pushsize[_sizepointer - 1] ;
+    //           _sq.erase(it);
+    //           _mystack.pop();
+    //           // _pullsize++;
+    //           // BPS_LOG(TRACE) << "PULL SIZE IS: " << _pullsize << " push size is:" << BytePSGlobal::pushsize[_sizepointer - 1];
+    //           // if(!_sq.size() && _pullsize == BytePSGlobal::pushsize[_sizepointer - 1]){
+    //           //   _dequeue = 0; //&& dynamic_size < _backward_exec[]
+    //           //   _pointer--;
+    //           //   _stagestart = 1;                  
+    //           //   _pullsize = 0;         
+    //           //   BPS_LOG(TRACE) << "PULL: size is redundant, waiting...";
+    //           // }
+    //           // BPS_LOG(TRACE) << "PULL: gradient before 0: " << tmp << "meet zero: " << _meetzero;
+    //         }
+    //         else{   //nxet stage enstack could begin.
+    //           _dequeue = 0;
+    //           _pointer--;
+    //           _stagestart = 1;
+    //           // _pullsize = 0;
+    //           BPS_LOG(TRACE) << "PULL: No left size. Waiting for next gradient block.";
+    //           break;  
+    //         }      //maybe no left size, but has no time to search the next one before meetzero;
+    //     }
+    //     else {
+    //         if(!_mystack.empty() && task -> priority != _mystack.top())continue;
+    //         if(!_pulldoor) {
+    //           forward_dynamic_size = _forward_exec[_exec_stage];
+    //           _stagepullnum = 0;
+    //           BPS_LOG(TRACE) << "exec_stage: " << _exec_stage << " initilized." << "  beginning dynamic size:"<< forward_dynamic_size;
+    //         }
+    //         if(!_mystack.empty() && (forward_dynamic_size > task -> len || _exec_stage > 12)){
+    //           _sq.erase(it);
+    //           _mystack.pop();
+    //           forward_dynamic_size -= task -> len;
+    //           _pulldoor++;
+    //           BPS_LOG(TRACE) << "PULL: dequeue after zero: " << task -> tensor_name << "  _exec_stage is:" << _exec_stage << "  forward dynamic size:" \
+    //               << forward_dynamic_size << "  pull door val is:" <<  _pulldoor;
+    //         }
 
-      if(_tensor_part[0] && task -> priority == 0){
-        _meetzero = 1;
-        BPS_LOG(INFO) << "Meet zero.";
-      }  
-      if(_sizepointer < 12)
-        {
-            if(task -> priority !=  _mystack.top())continue; 
-            // _noleftsize = 1;
-            if(dynamic_size > task -> len){
-              dynamic_size -= task -> len;
-              BPS_LOG(INFO) << "PULL: dequeue element: " << task -> tensor_name << "  dynamic size now is: " << dynamic_size;
-              _sq.erase(it);
-              _mystack.pop();
-              if(!_sq.size()){
-                _dequeue = 0;
-                _pointer--;
-                _stagestart = 1;
-                BPS_LOG(INFO) << "PULL: size is redundant, waiting...";
-              }
-              BPS_LOG(INFO) << "PULL: gradient before 0: " << tmp << "  meet zero: " << _meetzero;
-            }
-            else{   //nxet stage enstack could begin.
-              _dequeue = 0;
-              _pointer--;
-              _stagestart = 1;
-              BPS_LOG(INFO) << "PULL: No left size. Waiting for next gradient block.";
-              break;  
-            }      //maybe no left size, but has no time to search the next one before meetzero;
-        }
-        else {
-            if(!_pulldoor) {
-              forward_dynamic_size = _forward_exec[_exec_stage];
-              // BPS_LOG(INFO) << "exec_stage: " << _exec_stage << " initilized." << "  beginning dynamic size:"<< forward_dynamic_size;
-            }
-            if(!_mystack.empty() && task -> priority != _mystack.top())
-              continue;
-        
-            if(!_mystack.empty() && (forward_dynamic_size > task -> len || _exec_stage > 12)){
-              _sq.erase(it);
-              _mystack.pop();
-              forward_dynamic_size -= task -> len;
-              _pulldoor++;
-              BPS_LOG(INFO) << "PULL: dequeue after zero: " << task -> tensor_name << "  _exec_stage is:" << _exec_stage << "  forward dynamic size:" \
-                  << forward_dynamic_size << "  pull door val is:" <<  _pulldoor;
-            }
+    //         else if(!_mystack.empty() && _mystack.top() >= -1 * _grad_checkpoint[_exec_stage + 1]){
+    //           _sq.erase(it);
+    //           _mystack.pop();
+    //           _pulldoor++;
+    //           BPS_LOG(TRACE) << "PULL: dequeue after zero enforced: " << task -> tensor_name << "  _exec_stage is:" << _exec_stage <<  "   forward dynamic size:"  \
+    //             << forward_dynamic_size << "  pull door val is:" <<  _pulldoor;
+    //         }
 
-            else if(!_mystack.empty() && _mystack.top() >= -1 * _grad_checkpoint[_exec_stage + 1]){
-              _sq.erase(it);
-              _mystack.pop();
-              _pulldoor++;
-              BPS_LOG(INFO) << "PULL: dequeue after zero enforced: " << task -> tensor_name << "  _exec_stage is:" << _exec_stage <<  "   forward dynamic size:"  \
-                << forward_dynamic_size << "  pull door val is:" <<  _pulldoor;
-            }
-
-            else{
-              if(!_stagepullnum && _pulldoor){
-                _stagepullnum = _pulldoor;
-                BPS_LOG(INFO) << "initilize stagepullnum at stage "<< _exec_stage << ":  " << _stagepullnum;
-              }
-              // if(_sizepointer < 12){
-              //   _dequeue = 0;
-              //   _pointer--;
-              //   _stagestart = 1;
-              // BPS_LOG(INFO) << "REINTILIZE DEQUE ,POINTER AND STAGESTART.";
-              // }
-              break;
-            } 
-            if(_mystack.empty())//reset parameter
-            {
-              BPS_LOG(INFO) << "Clear.";
-              _dequeue = 0;
-              _pointer = 12;
-              _stagestart = 1;
-              _meetzero = 0;
-              _sizepointer = 1;//different from push process
-              // _dooropen = 11;
-              _exec_stage = 0;
-              _stagepullnum = 0;
-              _pulldoor=0;
-            }  
-            // if(!_mystack.empty() && _sizepointer < 12){
-            //     _dequeue = 0;
-            //     _pointer--;
-            //     _stagestart = 1;
-            //     BPS_LOG(INFO) << "REINTILIZE DEQUE ,POINTER AND STAGESTART.";
-            // }
-          // BPS_LOG(DEBUG) << "PULL door is closed.";
-          // break;
-          }
-
-      task->ready_event = nullptr;
-      // Add for profiling communication traces
-      recorderTs(task);
-      return task;
-    }
+    //         else{
+    //           if(!_stagepullnum && _pulldoor){
+    //             _stagepullnum = _pulldoor;
+    //             BPS_LOG(TRACE) << "initilize stagepullnum at stage "<< _exec_stage << ":  " << _stagepullnum;
+    //           }
+    //           break;
+    //         } 
+    //       // BPS_LOG(DEBUG) << "PULL door is closed.";
+    //       // break;
+    //       }
+    //   if(_sizepointer == 13 && !_stagepullnum &&_mystack.empty())//reset parameter
+    //   {
+    //     BPS_LOG(TRACE) << "Clear.";
+    //     _dequeue = 0;
+    //     _pointer = 12;
+    //     _stagestart = 1;
+    //     _meetzero = 0;
+    //     _sizepointer = 1;//different from push process
+    //     _exec_stage = 0;
+    //     _stagepullnum = 0;
+    //     _pulldoor=0;
+    //   }  
+    //   task->ready_event = nullptr;
+    //   // Add for profiling communication TRACEs
+    //   recorderTs(task);
+    //   return task;
+    // }
  
 //Detail: meetzero, pull the first stage immediately. When the stage1 is running, we could transfer `S = forward_stage1_time * bandwidth` data.
 //      pull_stack pop over under limit of S, if  pull_stack.top() > stage2_end ; else pull_stack.pop() until pull_stack.top() > stage2_end.
@@ -430,11 +421,11 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
     }
     _sq.erase(it);
     BPS_CHECK(task->tensor_name != "");
-    BPS_LOG(TRACE) << "Queue " << LogStrings[_qt]
+    BPS_LOG(DEBUG) << "Queue " << LogStrings[_qt]
                    << " getTask: " << task->tensor_name << " key: " << task->key
                    << " rank: " << BytePSGlobal::GetLocalRank();  
     task->ready_event = nullptr;
-    // Add for profiling communication traces
+    // Add for profiling communication TRACEs
     recorderTs(task);
     return task;
   }
@@ -457,12 +448,12 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask(uint64_t key) {
     _sq.erase(it);
 
     BPS_CHECK(task->tensor_name != "");
-    BPS_LOG(TRACE) << "Queue " << LogStrings[_qt]
+    BPS_LOG(DEBUG) << "Queue " << LogStrings[_qt]
                    << " getTask(key): " << task->tensor_name
                    << " key: " << task->key
                    << " rank: " << BytePSGlobal::GetLocalRank();
     task->ready_event = nullptr;
-    // Add for profiling communication traces
+    // Add for profiling communication TRACEs
     recorderTs(task);
     return task;
   }
@@ -474,10 +465,10 @@ uint32_t BytePSScheduledQueue::pendingSize() {
   return _sq.size();
 }
 
-void BytePSScheduledQueue::reportFinish(int size) {
+void BytePSScheduledQueue::reportFinish(std::shared_ptr<TensorTableEntry> task) {
   std::lock_guard<std::mutex> lock(_mutex);
   if (_is_scheduled) {
-      _credits += size;
+      _credits += task ->  len;
   }
   if(_qt == PUSH ) //) || _qt == PULL
   {
@@ -491,11 +482,11 @@ void BytePSScheduledQueue::reportFinish(int size) {
   {
     if(_stagepullnum > 0){
       _stagepullnum--;
-      BPS_LOG(INFO) << "PULL PROCESS FINISH: _stagepullnum value is:" << _stagepullnum;
+      BPS_LOG(TRACE) << "PULL PROCESS FINISH: _stagepullnum value is:" << _stagepullnum;
       if(!_stagepullnum){
         _exec_stage++;
         _pulldoor = 0;
-        BPS_LOG(INFO) << "STAGE PULL PROCESS FINISH: stage is:" << _exec_stage - 1;
+        BPS_LOG(TRACE) << "STAGE PULL PROCESS FINISH: stage is:" << _exec_stage - 1;
       }
     }
 

@@ -29,7 +29,7 @@ void FinishOrProceed(std::shared_ptr<TensorTableEntry> task) {
   BPS_CHECK_GE(queue_list.size(), 1);
   auto this_op = queue_list[0];
   auto q = BytePSGlobal::GetScheduledQueue(this_op);
-  q->reportFinish(task->len);
+  q->reportFinish(task);
   if (BytePSGlobal::IsTensorSampled(task->key)) {
     // We only support sampling
     BPS_CHECK(task->tensor->dtype() == common::BYTEPS_FLOAT32);
@@ -168,7 +168,7 @@ bool RunCoordinateLoopOnce(QueueType this_op) {
                    << "Signal=" << sig << ", rank=" << rank << ", key=" << key;
 
   } else {
-    std::this_thread::sleep_for(std::chrono::nanoseconds(1000));
+    std::this_thread::sleep_for(std::chrono::nanoseconds(100));
   }
   return true;
 }
@@ -297,7 +297,7 @@ bool RunRootNcclLoopOnce() {
     BytePSGlobal::GetNccl()->EnqueueGroup(nccl_entry);
   } else {
     NCCLCHECK(ncclGroupEnd());
-    std::this_thread::sleep_for(std::chrono::nanoseconds(1000));
+    std::this_thread::sleep_for(std::chrono::nanoseconds(100));
   }
 
   return true;
@@ -357,7 +357,7 @@ bool RunSyncNcclOnce() {
     BPS_LOG(TRACE) << "Finished NCCL Group size=" << nccl_entry->tasks.size()
                    << " rank=" << BytePSGlobal::GetLocalRank();
   } else {
-    std::this_thread::sleep_for(std::chrono::nanoseconds(1000));
+    std::this_thread::sleep_for(std::chrono::nanoseconds(100));
   }
   return true;
 }
@@ -425,7 +425,7 @@ bool RunCopyDevice2HostLoopOnce() {
 
     FinishOrProceed(task);
   } else {
-    std::this_thread::sleep_for(std::chrono::nanoseconds(1000));
+    std::this_thread::sleep_for(std::chrono::nanoseconds(100));
   }
   return true;
 }
@@ -478,7 +478,7 @@ bool RunPcieReduceLoopOnce() {
 
     FinishOrProceed(task);
   } else {
-    std::this_thread::sleep_for(std::chrono::nanoseconds(1000));
+    std::this_thread::sleep_for(std::chrono::nanoseconds(100));
   }
   return true;
 }
@@ -516,7 +516,7 @@ bool RunPushLoopOnce() {
       FinishOrProceed(task);
     }
   } else {
-    std::this_thread::sleep_for(std::chrono::nanoseconds(1000));
+    std::this_thread::sleep_for(std::chrono::nanoseconds(100));
   }
   return true;
 }
@@ -552,7 +552,7 @@ bool RunPullLoopOnce() {
                                    FinishOrProceed(task);
                                  });
   } else {
-    std::this_thread::sleep_for(std::chrono::nanoseconds(1000));
+    std::this_thread::sleep_for(std::chrono::nanoseconds(100));
   }
   return true;
 }
@@ -624,7 +624,7 @@ bool RunRootCopyHost2DeviceLoopOnce() {
 
     FinishOrProceed(task);
   } else {
-    std::this_thread::sleep_for(std::chrono::nanoseconds(1000));
+    std::this_thread::sleep_for(std::chrono::nanoseconds(100));
   }
   return true;
 }
