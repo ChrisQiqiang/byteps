@@ -233,16 +233,21 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
               break;  
             }      
         }
-        else if(!_dooropen) {//we cannot change the value of tensor_part if door is closed.
+        else if(_mywindow_size < task -> len) {//we cannot change the value of tensor_part if door is closed.
           BPS_LOG(DEBUG) << "push door is closed.";
           break;
         }
         else {         
           if(task -> priority !=  _mystack.top())continue;
-            _dooropen--;
-            // dynamic_size -= task -> len;  // if meetzero, dynamic size is no meaning.
+            // _dooropen--;
+            int ins = task -> priority * -1;
+            if(max(abs(ins - _mywindow.begin()), abs(ins - (_mywindow.end() -1))) > _difference_bound)
+              break;
+            _mywindow_size -= task -> len;
+            _mywindow.insert(task -> priority * -1);
             _sq.erase(it);
             _mystack.pop();
+            // dynamic_size -= task -> len;  // if meetzero, dynamic size is no meaning.
             BPS_LOG(DEBUG) << "PUSH gradient after 0: " << tmp ;
             // BPS_LOG(DEBUG) << "The door has been closed.";
         }
@@ -470,27 +475,16 @@ void BytePSScheduledQueue::reportFinish(std::shared_ptr<TensorTableEntry> task) 
   if (_is_scheduled) {
       _credits += task ->  len;
   }
-  if(_qt == PUSH ) //) || _qt == PULL
+  std::string name = task -> tensor_name;
+
+  if(_qt == PUSH && name.find("gradient") != name.npos) //) || _qt == PULL
   {
     if(_meetzero) {
-         if(_dooropen < 11)
-              _dooropen++;
-         }       
-         // BPS_LOG(DEBUG) << "door open value:" << _dooropen;
-  }
-  if(_qt == PULL)
-  {
-    if(_stagepullnum > 0){
-      _stagepullnum--;
-      BPS_LOG(TRACE) << "PULL PROCESS FINISH: _stagepullnum value is:" << _stagepullnum;
-      if(!_stagepullnum){
-        _exec_stage++;
-        _pulldoor = 0;
-        BPS_LOG(TRACE) << "STAGE PULL PROCESS FINISH: stage is:" << _exec_stage - 1;
-      }
+        _mywindow.erase(_mywindow.lower_bound(task -> priority * -1));
+        _mywindow_size += task -> len;
     }
-
   }
+
   return;
 }
 

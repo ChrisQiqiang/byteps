@@ -52,7 +52,7 @@ class BytePSScheduledQueue {
   // int _tensor_num = 0; //log the number of transferred tensor.
   // int _vis[160] = {0};
   int _meetzero = 0;
-  int _dooropen = 11; 
+
   int _pulldoor = 0 ; 
   // int _grad_checkpoint[13] = {0,10,23,36,51,63,78,91,104,118,131,144,157};
   int _grad_checkpoint[13] = {-1,9,22,35,50,62,77,90,103,117,130,143,156};
@@ -74,6 +74,12 @@ class BytePSScheduledQueue {
   // int xxx;
 
 
+//forward parameter
+  int _dooropen = 11; 
+  std::multiset<int>_mywindow;
+  int _mywindow_size = 3000000;
+  int _utilization_Size = 1000000;
+  int _difference_bound = 20;
 
 
 
