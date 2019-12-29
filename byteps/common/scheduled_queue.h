@@ -21,6 +21,7 @@
 #include <unordered_map>
 #include <vector>
 #include <stack>
+#include <set>
 #include "common.h"
 #include "ready_table.h"
 
@@ -40,6 +41,14 @@ class BytePSScheduledQueue {
 
  private:
   // TODO: use priority queue or heap
+    // struct comparator {
+    //             bool operator()(int a, int b) {
+    //                 return a > b;
+    //             }
+    //         };
+
+
+
   std::vector<std::shared_ptr<TensorTableEntry>> _sq;
   std::vector<std::shared_ptr<TensorTableEntry>> _mysq;
   //add  myqueue to control addtask process.
@@ -56,9 +65,10 @@ class BytePSScheduledQueue {
   int _pulldoor = 0 ; 
   // int _grad_checkpoint[13] = {0,10,23,36,51,63,78,91,104,118,131,144,157};
   int _grad_checkpoint[13] = {-1,9,22,35,50,62,77,90,103,117,130,143,156};
-  int _backward_exec[13] = {2170000,2380000,1340000,1540000,2130000,2740000,2250000,3290000,4580000,3890000,2950000,2000000,0};
-  // int _backward_exec[13] = {4550000,4710000,2780000,3000000,4240000,5400000,4450000,6480000,9140000,7400000,5860000,0,0};
-  int _forward_exec[13] = {0,1350000,1400000,840000,900000,1275000,1620000,1335000,1900000,2700000,2200000,1750000,0};
+  // int _backward_exec[13] = {2170000,2380000,1340000,1540000,2130000,2740000,2250000,3290000,4580000,3890000,2950000,2000000,0};
+  int _backward_exec[13] = {4550000,4710000,2780000,3000000,4240000,5400000,4450000,6480000,9140000,7400000,5860000,0,0};
+  // int _forward_exec[13] = {0,1350000,1400000,840000,900000,1275000,1620000,1335000,1900000,2700000,2200000,1750000,0};
+  // int _forward_exec[13] = {0,2700000,2800000,1680000,1800000,2550000,3240000,2670000,3800000,5400000,4400000,3500000,0};
   int _exec_stage = 0;
   int _noleftsize = 0;
   int forward_dynamic_size;
@@ -76,7 +86,7 @@ class BytePSScheduledQueue {
 
 //forward parameter
   int _dooropen = 11; 
-  std::multiset<int>_mywindow;
+  std::multiset <int> _mywindow;
   int _mywindow_size = 3000000;
   int _utilization_Size = 1000000;
   int _difference_bound = 20;
