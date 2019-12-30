@@ -239,7 +239,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
           break;
         }
         else {         
-          if(task -> priority !=  _mystack.top())continue;
+            if(task -> priority !=  _mystack.top())continue;
             // _dooropen--;
             int ins = task -> priority * -1;
             if(!_mywindow.empty() && ins - *(_mywindow.begin()) > _difference_bound)
@@ -253,18 +253,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
             // BPS_LOG(DEBUG) << "The door has been closed.";
         }
         //  BPS_LOG(DEBUG) << "transferred tensor num: " << _tensor_num  << "  empty: " << _mystack.empty() << " size of myqueue: " << _mystack.size();
-        if(_mystack.empty() && _meetzero)
-        {
-          BPS_LOG(DEBUG) << "Clear.";
-          _dequeue = 0;
-          _pointer = 12;
-          _stagestart = 1;
-          _meetzero = 0;
-          _sizepointer = 0;
-          _dooropen = 11;
-          _mywindow_size = 4000000;
-          //  _pushsize = 0;
-        }
+
         task->ready_event = nullptr;
         // Add for profiling communication TRACEs
         recorderTs(task);
@@ -482,12 +471,23 @@ void BytePSScheduledQueue::reportFinish(std::shared_ptr<TensorTableEntry> task) 
   if(_qt == PUSH && name.find("gradient") != name.npos) //) || _qt == PULL
   {
     if(_meetzero) {
-      
         BPS_LOG(INFO) << "PUSH element over:" << task ->tensor_name << "  mywindow size:" << _mywindow_size << " TOP element is: " <<  *(_mywindow.begin());
         _mywindow.erase(_mywindow.lower_bound(task -> priority * -1));
         _mywindow_size += task -> len;
         if(_mywindow.size() > 0 )
           BPS_LOG(INFO) << "after erase: " << "  mywindow size:" << _mywindow_size << " TOP element is: " << *(_mywindow.begin());    
+        if(_mystack.empty() && _meetzero && _mywindow.size() == 0)
+        {
+          BPS_LOG(INFO) << "Clear.";
+          _dequeue = 0;
+          _pointer = 12;
+          _stagestart = 1;
+          _meetzero = 0;
+          _sizepointer = 0;
+          _dooropen = 11;
+          _mywindow_size = 4000000;
+          //  _pushsize = 0;
+        }
     }
   }
 
