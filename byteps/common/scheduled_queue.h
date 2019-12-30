@@ -87,7 +87,7 @@ class BytePSScheduledQueue {
 //forward parameter
   int _dooropen = 11; 
   std::multiset <int> _mywindow;
-  int _mywindow_size = 3000000;
+  int _mywindow_size = 2000000;
   int _utilization_Size = 1000000;
   int _difference_bound = 20;
 
