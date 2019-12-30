@@ -336,6 +336,7 @@ void BytePSScheduledQueue::reportFinish(std::shared_ptr<TensorTableEntry> task) 
             _dequeue = 0;
             _pointer = 12;
             _stagestart = 1;
+            _meetzero = 0;
             _sizepointer = 0;
             _mywindow_size = 8000000;
             //  _pushsize = 0;
