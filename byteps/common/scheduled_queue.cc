@@ -234,7 +234,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
               break;  
             }      
         }
-        else if(_mywindow_size < task -> len) {//we cannot change the value of tensor_part if door is closed.
+        else if(_mywindow_size < task -> len ) {//we cannot change the value of tensor_part if door is closed.
           BPS_LOG(DEBUG) << "PUSH gradient after 0: " << tmp << "  window size" << _mywindow_size << "  window contents: " << _mywindow.size() << "  PUSH window is closed.";
           break;
         }
@@ -242,7 +242,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
             if(task -> priority !=  _mystack.top())continue;
             // _dooropen--;
             int ins = task -> priority * -1;
-            if(!_mywindow.empty() && ins - *(_mywindow.begin()) > _difference_bound)
+            if(!_mywindow.empty() && ins - *(_mywindow.begin()) > _difference_bound && _mywindow_size < _utilization_size)
               break;
             _mywindow_size -= task -> len;
             _mywindow.insert(task -> priority * -1);
@@ -487,7 +487,7 @@ void BytePSScheduledQueue::reportFinish(std::shared_ptr<TensorTableEntry> task) 
           _meetzero = 0;
           _sizepointer = 0;
           _dooropen = 11;
-          _mywindow_size = 4000000;
+          _mywindow_size = 10000000;
           //  _pushsize = 0;
         }
     }
