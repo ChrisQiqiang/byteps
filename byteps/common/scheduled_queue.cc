@@ -220,17 +220,17 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
             if(task -> priority !=  _mystack.top())continue; 
             if(dynamic_size > task -> len){
               dynamic_size -= task -> len;
-              BPS_LOG(DEBUG) << "dequeue element: " << task -> tensor_name << "dynamic size now is: " << dynamic_size;
+              BPS_LOG(INFO) << "dequeue element: " << task -> tensor_name << "dynamic size now is: " << dynamic_size;
               _sq.erase(it);
               _mystack.pop();
-              BPS_LOG(DEBUG) << "PUSH gradient before 0: " << tmp ;
+              BPS_LOG(INFO) << "PUSH gradient before 0: " << tmp ;
             }
             else{   //nxet stage enstack could begin.
               _dequeue = 0;
               _pointer--;
               _stagestart = 1;
               BytePSGlobal::pushsize[_sizepointer] = _mystack.top() + 1;
-              //BPS_LOG(TRACE) << "PUSH: No left size. Waiting for next gradient block." << "intilized global pushsize" << _sizepointer << ": " << BytePSGlobal::pushsize[_sizepointer];
+              BPS_LOG(INFO) << "PUSH: No left size. Waiting for next gradient block.";
               break;  
             }      
         }
@@ -249,7 +249,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
             _sq.erase(it);
             _mystack.pop();
             // dynamic_size -= task -> len;  // if meetzero, dynamic size is no meaning.
-            BPS_LOG(DEBUG) << "PUSH gradient after 0: " << tmp << " my window size: " << _mywindow_size ;
+            BPS_LOG(INFO) << "PUSH gradient after 0: " << tmp << " my window size: " << _mywindow_size ;
             // BPS_LOG(DEBUG) << "The door has been closed.";
         }
         //  BPS_LOG(DEBUG) << "transferred tensor num: " << _tensor_num  << "  empty: " << _mystack.empty() << " size of myqueue: " << _mystack.size();
@@ -471,23 +471,23 @@ void BytePSScheduledQueue::reportFinish(std::shared_ptr<TensorTableEntry> task) 
   if(_qt == PUSH && name.find("gradient") != name.npos) //) || _qt == PULL
   {
     if(_meetzero) {
-        BPS_LOG(DEBUG) << "PUSH element over:" << task ->tensor_name << "  mywindow size:" << _mywindow_size << " TOP element is: " <<  *(_mywindow.begin());
+        BPS_LOG(INFO) << "PUSH element over:" << task ->tensor_name << "  mywindow size:" << _mywindow_size << " TOP element is: " <<  *(_mywindow.begin());
         if(_mywindow.lower_bound(task -> priority * -1) == _mywindow.end())
           return;
         _mywindow.erase(_mywindow.lower_bound(task -> priority * -1));
         _mywindow_size += task -> len;
         if(_mywindow.size() > 0 )
-          BPS_LOG(DEBUG) << "after erase: " << "  mywindow size:" << _mywindow_size << " TOP element is: " << *(_mywindow.begin());    
+          BPS_LOG(INFO) << "after erase: " << "  mywindow size:" << _mywindow_size << " TOP element is: " << *(_mywindow.begin());    
         if(_mystack.empty() && _meetzero && _mywindow.size() == 0)
         {
-          BPS_LOG(DEBUG) << "Clear.";
+          BPS_LOG(INFO) << "Clear.";
           _dequeue = 0;
           _pointer = 12;
           _stagestart = 1;
           _meetzero = 0;
           _sizepointer = 0;
           _dooropen = 11;
-          _mywindow_size = 10000000;
+          _mywindow_size = 8000000;
           //  _pushsize = 0;
         }
     }
