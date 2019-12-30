@@ -158,7 +158,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
       
           /////first  enqueue as the gradient block coming, then dequeue dynamically.
         if(_dequeue != 1){
-          BPS_LOG(DEBUG) << "Position 1" << " pointer: " <<  _pointer <<" stagestart: " << _stagestart << " mystack empty:" <<  _mystack.empty() \
+          BPS_LOG(INFO) << "Position 1" << " pointer: " <<  _pointer <<" stagestart: " << _stagestart << " mystack empty:" <<  _mystack.empty() \
                 << "task name: " << task -> tensor_name ; 
  
           bool taskisstart = task -> priority == -1 * _grad_checkpoint[_pointer]  && _stagestart ;
@@ -170,21 +170,21 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
                     && _mystack.top() + 1 > -1 * _grad_checkpoint[_pointer] \ 
                     && _mystack.top() + 1  < -1 * _grad_checkpoint[_pointer - 1];                                    ;
           if(!_mystack.empty() && _mystack.top() == -156) 
-            BPS_LOG(DEBUG) << "proctagged when top is -156: " << proctagged; 
+            BPS_LOG(INFO) << "proctagged when top is -156: " << proctagged; 
           if( taskisstart || taskisproc || starttagged || proctagged)
           {
             if(starttagged)
               for(int x = 0; x < _tensor_part[_grad_checkpoint[_pointer]]; x++){
                 _mystack.push(_grad_checkpoint[_pointer] * -1);
                 _stagestart = 0;
-                BPS_LOG(DEBUG) << "ENQUEUE at start element not firstly: " << _grad_checkpoint[_pointer] * -1 << " mystack size: " << _mystack.size() ;
+                BPS_LOG(INFO) << "ENQUEUE at start element not firstly: " << _grad_checkpoint[_pointer] * -1 << " mystack size: " << _mystack.size() ;
               }
             
             else if(proctagged){
               int tmp = _mystack.top() + 1;
               for(int x = 0; x < _tensor_part[tmp * -1]; x++){
                 _mystack.push(tmp);
-                BPS_LOG(DEBUG) << "ENQUEUE in proc element not firstly: " << tmp  << " mystack size: " << _mystack.size();
+                BPS_LOG(INFO) << "ENQUEUE in proc element not firstly: " << tmp  << " mystack size: " << _mystack.size();
               }
             }
 
@@ -193,14 +193,14 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
               _tensor_part[task -> priority * -1] = task -> total_partnum;
               for(int x = 0; x< task -> total_partnum; x++){
                 _mystack.push(task -> priority);
-                BPS_LOG(DEBUG) << "ENQUEUE element firstly: " << task -> priority ;
+                BPS_LOG(INFO) << "ENQUEUE element firstly: " << task -> priority ;
               }
             }
             if(!_mystack.empty() &&  _mystack.top() * -1 == _grad_checkpoint[_pointer - 1] + 1 )
             {
                 _dequeue = 1;
                 dynamic_size = _backward_exec[_sizepointer++];               
-                BPS_LOG(DEBUG) << "enqueue operation of one stage is over." << "_sizepointer:" << _sizepointer << "mystack top is: " << _mystack.top();
+                BPS_LOG(INFO) << "enqueue operation of one stage is over." << "_sizepointer:" << _sizepointer << "mystack top is: " << _mystack.top();
                 break;
                 ///////////////////////////initialize dynamic size of this gradient stage.////////////////////////////
             }
@@ -213,7 +213,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
        // BPS_LOG(DEBUG) << "Task: " <<  task-> priority << "I have meet zero: " << _meetzero << " and door is open: " << _dooropen;
         if(task -> priority == 0) {
           _meetzero = 1;
-         BPS_LOG(DEBUG) << "Meet zero." << "my stack size: " << _mystack.size();
+         BPS_LOG(INFO) << "Meet zero." << "my stack size: " << _mystack.size();
          }
         if(!_meetzero)
         {
@@ -235,7 +235,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
             }      
         }
         else if(_mywindow_size < task -> len ) {//we cannot change the value of tensor_part if door is closed.
-          BPS_LOG(DEBUG) << "PUSH gradient after 0: " << tmp << "  window size" << _mywindow_size << "  window contents: " << _mywindow.size() << "  PUSH window is closed.";
+          BPS_LOG(INFO) << "PUSH gradient after 0: " << tmp << "  window size" << _mywindow_size << "  window contents: " << _mywindow.size() << "  PUSH window is closed.";
           break;
         }
         else {         
@@ -246,6 +246,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
               break;
             _mywindow_size -= task -> len;
             _mywindow.insert(task -> priority * -1);
+            BPS_LOG(INFO) << "_mywindow.insert" << (task -> priority * -1);
             _sq.erase(it);
             _mystack.pop();
             // dynamic_size -= task -> len;  // if meetzero, dynamic size is no meaning.
