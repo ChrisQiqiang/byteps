@@ -481,10 +481,12 @@ void BytePSScheduledQueue::reportFinish(std::shared_ptr<TensorTableEntry> task) 
   if(_qt == PUSH && name.find("gradient") != name.npos) //) || _qt == PULL
   {
     if(_meetzero) {
-        BPS_LOG(INFO) << "PUSH element over:" << task ->tensor_name << "  mywindow size:" << _mywindow_size << " TOP element is: " << _mywindow.size() ? *(_mywindow.begin()): "NULL";
+      
+        BPS_LOG(INFO) << "PUSH element over:" << task ->tensor_name << "  mywindow size:" << _mywindow_size << " TOP element is: " <<  *(_mywindow.begin());
         _mywindow.erase(_mywindow.lower_bound(task -> priority * -1));
         _mywindow_size += task -> len;
-        BPS_LOG(INFO) << "after erase: " << "  mywindow size:" << _mywindow_size << " TOP element is: " << (_mywindow.size() ? *(_mywindow.begin()): "NULL" );    
+        if(_mywindow.size() > 0 )
+          BPS_LOG(INFO) << "after erase: " << "  mywindow size:" << _mywindow_size << " TOP element is: " << *(_mywindow.begin());    
     }
   }
 
