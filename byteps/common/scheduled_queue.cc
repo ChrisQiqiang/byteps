@@ -240,7 +240,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
           break;
         }
         else {         
-            if(task -> priority !=  _mystack.top())continue;
+            if(!_mystack.empty() && task -> priority !=  _mystack.top())continue;
             // _dooropen--;
             int ins = task -> priority * -1;
             if(!_mywindow.empty() && ins - *(_mywindow.begin()) > _difference_bound && _mywindow_size > _utilization_size)
