@@ -157,9 +157,9 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
     {
       
           /////first  enqueue as the gradient block coming, then dequeue dynamically.
-        if(_dequeue != 1){
-          BPS_LOG(INFO) << "Position 1" << " pointer: " <<  _pointer <<" stagestart: " << _stagestart << " mystack empty:" <<  _mystack.empty() \
-                << "task name: " << task -> tensor_name ; 
+        // if(_dequeue != 1){
+        //   BPS_LOG(DEBUG) << "Position 1" << " pointer: " <<  _pointer <<" stagestart: " << _stagestart << " mystack empty:" <<  _mystack.empty() \
+        //         << "task name: " << task -> tensor_name ; 
  
           bool taskisstart = task -> priority == -1 * _grad_checkpoint[_pointer]  && _stagestart ;
           bool taskisproc = !_mystack.empty() && task -> priority > -1 * _grad_checkpoint[_pointer] \ 
@@ -211,6 +211,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
         }            
         // Size = Bandwidth * exectime , size decreased by the pop operation of mystack.
        // BPS_LOG(DEBUG) << "Task: " <<  task-> priority << "I have meet zero: " << _meetzero << " and door is open: " << _dooropen;
+        
         if(task -> priority == 0) {
           _meetzero = 1;
          BPS_LOG(DEBUG) << "Meet zero." << "my stack size: " << _mystack.size();
@@ -242,7 +243,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
             if(task -> priority !=  _mystack.top())continue;
             // _dooropen--;
             int ins = task -> priority * -1;
-            if(!_mywindow.empty() && ins - *(_mywindow.begin()) > _difference_bound && _mywindow_size < _utilization_size)
+            if(!_mywindow.empty() && ins - *(_mywindow.begin()) > _difference_bound && _mywindow_size > _utilization_size)
               break;
             _mywindow_size -= task -> len;
             _mywindow.insert(task -> priority * -1);
@@ -343,9 +344,7 @@ void BytePSScheduledQueue::reportFinish(std::shared_ptr<TensorTableEntry> task) 
             _dequeue = 0;
             _pointer = 12;
             _stagestart = 1;
-            _meetzero = 0;
             _sizepointer = 0;
-            _dooropen = 11;
             _mywindow_size = 8000000;
             //  _pushsize = 0;
         }
