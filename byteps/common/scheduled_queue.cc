@@ -484,7 +484,7 @@ void BytePSScheduledQueue::reportFinish(std::shared_ptr<TensorTableEntry> task) 
         BPS_LOG(INFO) << "PUSH element over:" << task ->tensor_name << "  mywindow size:" << _mywindow_size << " TOP element is: " << _mywindow.size() ? *(_mywindow.begin()): "NULL";
         _mywindow.erase(_mywindow.lower_bound(task -> priority * -1));
         _mywindow_size += task -> len;
-        BPS_LOG(INFO) << "after erase: " << "  mywindow size:" << _mywindow_size << " TOP element is: " << _mywindow.size() ? *(_mywindow.begin()): "NULL";    
+        BPS_LOG(INFO) << "after erase: " << "  mywindow size:" << _mywindow_size << " TOP element is: " << (_mywindow.size() ? *(_mywindow.begin()): "NULL" );    
     }
   }
 
