@@ -247,11 +247,11 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
               break;
             _mywindow_size -= task -> len;
             _mywindow.insert(task -> priority * -1);
-            BPS_LOG(INFO) << "_mywindow.insert" << (task -> priority * -1);
+            BPS_LOG(DEBUG) << "_mywindow.insert" << (task -> priority * -1);
             _sq.erase(it);
             _mystack.pop();
             // dynamic_size -= task -> len;  // if meetzero, dynamic size is no meaning.
-            BPS_LOG(INFO) << "PUSH gradient after 0: " << tmp << " my window size: " << _mywindow_size ;
+            BPS_LOG(DEBUG) << "PUSH gradient after 0: " << tmp << " my window size: " << _mywindow_size ;
             // BPS_LOG(DEBUG) << "The door has been closed.";
           }
         //  BPS_LOG(DEBUG) << "transferred tensor num: " << _tensor_num  << "  empty: " << _mystack.empty() << " size of myqueue: " << _mystack.size();
@@ -322,17 +322,17 @@ void BytePSScheduledQueue::reportFinish(std::shared_ptr<TensorTableEntry> task) 
   if(_qt == PUSH && name.find("gradient") != name.npos) 
   {
     if(_meetzero) {
-        BPS_LOG(INFO) << "PUSH element over:" << task ->tensor_name << "  mywindow size:" << _mywindow_size << " TOP element is: " <<  *(_mywindow.begin());
+        BPS_LOG(DEBUG) << "PUSH element over:" << task ->tensor_name << "  mywindow size:" << _mywindow_size << " TOP element is: " <<  *(_mywindow.begin());
         if(_mywindow.lower_bound(task -> priority * -1) == _mywindow.end())
           return;
         _mywindow.erase(_mywindow.lower_bound(task -> priority * -1));
         _mywindow_size += task -> len;
         // _pullwindow.insert(task -> priority * -1);
         if(_mywindow.size() > 0 )
-          BPS_LOG(INFO) << "after erase: " << "  mywindow size:" << _mywindow_size << " TOP element is: " << *(_mywindow.begin());    
+          BPS_LOG(DEBUG) << "after erase: " << "  mywindow size:" << _mywindow_size << " TOP element is: " << *(_mywindow.begin());    
         if(_mystack.empty() && _meetzero && _mywindow.size() == 0)
         {
-            BPS_LOG(INFO) << "Clear.";
+            BPS_LOG(DEBUG) << "Clear.";
             _dequeue = 0;
             _pointer = 12;
             _stagestart = 1;
