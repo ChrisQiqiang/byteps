@@ -40,14 +40,6 @@ class BytePSScheduledQueue {
   void reportFinish(std::shared_ptr<TensorTableEntry> task);
 
  private:
-  // TODO: use priority queue or heap
-    // struct comparator {
-    //             bool operator()(int a, int b) {
-    //                 return a > b;
-    //             }
-    //         };
-
-
 
   std::vector<std::shared_ptr<TensorTableEntry>> _sq;
   std::vector<std::shared_ptr<TensorTableEntry>> _mysq;
