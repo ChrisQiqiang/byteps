@@ -327,17 +327,10 @@ void BytePSScheduledQueue::reportFinish(std::shared_ptr<TensorTableEntry> task) 
           return;
         _mywindow.erase(_mywindow.lower_bound(task -> priority * -1));
         _mywindow_size += task -> len;
-        _pullwindow.insert(task -> priority * -1);
+        // _pullwindow.insert(task -> priority * -1);
         if(_mywindow.size() > 0 )
-          BPS_LOG(INFO) << "after erase: " << "  mywindow size:" << _mywindow_size << " TOP element is: " << *(_mywindow.begin());     
-    }
-  }
-  if(_qt == PULL && name.find("gradient") != name.npos){
-      if(_meetzero){
-        if(_pullwindow.lower_bound(task -> priority * -1) == _pullwindow.end())
-            return;
-        _pullwindow.erase(_pullwindow.lower_bound(task -> priority * -1));
-        if(_mystack.empty() && _meetzero && _mywindow.size() == 0 && _pullwindow.size() == 0)
+          BPS_LOG(INFO) << "after erase: " << "  mywindow size:" << _mywindow_size << " TOP element is: " << *(_mywindow.begin());    
+        if(_mystack.empty() && _meetzero && _mywindow.size() == 0)
         {
             BPS_LOG(INFO) << "Clear.";
             _dequeue = 0;
@@ -346,9 +339,17 @@ void BytePSScheduledQueue::reportFinish(std::shared_ptr<TensorTableEntry> task) 
             _sizepointer = 0;
             _mywindow_size = 8000000;
             //  _pushsize = 0;
-        }
-      }
+        } 
     }
+  }
+  // if(_qt == PULL && name.find("gradient") != name.npos){
+  //     if(_meetzero){
+  //       if(_pullwindow.lower_bound(task -> priority * -1) == _pullwindow.end())
+  //           return;
+  //       _pullwindow.erase(_pullwindow.lower_bound(task -> priority * -1));
+  
+  //     }
+  //   }
   return;
   }
 
