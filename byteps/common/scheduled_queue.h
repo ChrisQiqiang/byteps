@@ -66,13 +66,14 @@ class BytePSScheduledQueue {
   ReadyTable *_rt;
 
 
-  //parameters changes along by model change.
-  int _grad_checkpoint[13] = {-1, 9, 22, 35, 50, 62, 77, 90, 103, 117, 130, 143, 156};
-  int _backward_exec[13] = {47, 46, 26, 30, 37, 53, 44, 64, 90, 74, 58, 15, 0};
+  //parameters changes along by model change. Values for resnet50 are as follows. Default model is resnet50. 
+  int _grad_checkpoint[13] = {-1, 9, 22, 35, 50, 62, 77, 90, 103, 117, 130, 143, 156}; //static for a specific model
+  double _backward_exec[13] = {23.5, 23, 13, 15, 18.5, 26.5, 22, 32, 45, 37, 29, 7.5, 0}; // batchsize 32.
   int _mywindow_size = 8000000;
   int _utilization_size = 200000;
   int _difference_bound = 20;
   int _init_pointer = 12;
+  int B = 125000;
 
 };
 }  // namespace common

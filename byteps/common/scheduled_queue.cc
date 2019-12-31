@@ -48,7 +48,7 @@ BytePSScheduledQueue::BytePSScheduledQueue(QueueType type) {
   _current_window_size = _mywindow_size;
   _pointer = _init_pointer;
   //computing transferred size between two blocks.
-  for (int i = 0; i < 13; i++)_backward_exec[i] *= batchsize/32;
+  for (int i = 0; i < 13; i++)_backward_exec[i] *= (double)batchsize/32;
   for (int i = 0; i < 13; i++)_backward_exec[i] *= B;
 
 
@@ -107,7 +107,6 @@ BytePSScheduledQueue::BytePSScheduledQueue(QueueType type) {
       if (BytePSGlobal::IsRootDevice()) {
         _rt = BytePSGlobal::GetPullTable();
       }
-      // dynamic_size = _backward_exec[_sizepointer + 1];
       _sizepointer=1;
       break;
     default:
@@ -229,7 +228,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
             if(!_mystack.empty() &&  _mystack.top() * -1 == _grad_checkpoint[_pointer - 1] + 1 )
             {
                 _dequeue = 1;
-                dynamic_size = _backward_exec[_sizepointer++];               
+                dynamic_size = (int)_backward_exec[_sizepointer++];               
                 BPS_LOG(DEBUG) << "enqueue operation of one stage is over." << "_sizepointer:" << _sizepointer << "mystack top is: " << _mystack.top();
                 break;
                 ///////////////////////////initialize dynamic size of this gradient stage.////////////////////////////
