@@ -41,6 +41,7 @@ class BytePSScheduledQueue {
 
  private:
 
+  enum model{resnet50, vgg16, transformer};
   std::vector<std::shared_ptr<TensorTableEntry>> _sq;
   std::vector<std::shared_ptr<TensorTableEntry>> _mysq;
   //add  myqueue to control addtask process.
@@ -50,46 +51,29 @@ class BytePSScheduledQueue {
   uint64_t _credits;
   bool _is_scheduled;
   int _tensor_part[160] = {0};//log every transferred tensor part
-  // int _tensor_num = 0; //log the number of transferred tensor.
-  // int _vis[160] = {0};
   int _meetzero = 0;
-
-  int _pulldoor = 0 ; 
-  // int _grad_checkpoint[13] = {0,10,23,36,51,63,78,91,104,118,131,144,157};
-  int _grad_checkpoint[13] = {-1,9,22,35,50,62,77,90,103,117,130,143,156};
-  // int _backward_exec[13] = {2170000,2380000,1340000,1540000,2130000,2740000,2250000,3290000,4580000,3890000,2950000,0,0};
-  int _backward_exec[13] = {5875000,5750000,3250000,3750000,4625000,6625000,5500000,8000000,11250000,9250000,7250000,0,0};
-  // int _forward_exec[13] = {0,1350000,1400000,840000,900000,1275000,1620000,1335000,1900000,2700000,2200000,1750000,0};
-  // int _forward_exec[13] = {0,2700000,2800000,1680000,1800000,2550000,3240000,2670000,3800000,5400000,4400000,3500000,0};
   int _exec_stage = 0;
-  int _noleftsize = 0;
-  int forward_dynamic_size;
   int _sizepointer = 0;
   int _stagepullnum = 0;
-
   int _dequeue = 0;
-  int _pointer = 12;
   int _stagestart = 1;
   int dynamic_size ;
-  int _pushsize = 0;
-  int _pullsize = 0;
-  // int xxx;
-
-
-//forward parameter
-  int _dooropen = 11; 
+  int _current_window_size;
+  int _pointer;
+  int batchsize = 32;
   std::multiset <int> _mywindow;
-    std::multiset <int> _pullwindow;
+  QueueType _qt;
+  ReadyTable *_rt;
+
+
+  //parameters changes along by model change.
+  int _grad_checkpoint[13] = {-1, 9, 22, 35, 50, 62, 77, 90, 103, 117, 130, 143, 156};
+  int _backward_exec[13] = {47, 46, 26, 30, 37, 53, 44, 64, 90, 74, 58, 15, 0};
   int _mywindow_size = 8000000;
   int _utilization_size = 200000;
   int _difference_bound = 20;
+  int _init_pointer = 12;
 
-
-
-
-
-  QueueType _qt;
-  ReadyTable *_rt;
 };
 }  // namespace common
 }  // namespace byteps
