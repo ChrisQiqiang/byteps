@@ -36,7 +36,7 @@ BytePSScheduledQueue::BytePSScheduledQueue(QueueType type) {
     
   if(getenv("MODEL"))
   {
-    if(!strcmp(genev("MODEL"), "vgg16"))
+    if(!strcmp(genenv("MODEL"), "vgg16"))
     {
       int _grad_checkpoint[13] = {-1, 9, 22, 35, 50, 62, 77, 90, 103, 117, 130, 143, 156};
       int _backward_exec[13] = {47, 46, 26, 30, 37, 53, 44, 64, 90, 74, 58, 15, 0}; // backward execution time
