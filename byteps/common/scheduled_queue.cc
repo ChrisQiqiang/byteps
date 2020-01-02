@@ -47,6 +47,7 @@ BytePSScheduledQueue::BytePSScheduledQueue(QueueType type) {
         _grad_checkpoint[i] = tmp1[i];
         _backward_exec[i] = tmp2[i];
       }
+      BPS_LOG(INFO) << "model vgg initilized.";
     }
   }
   //variables initilization
@@ -57,7 +58,7 @@ BytePSScheduledQueue::BytePSScheduledQueue(QueueType type) {
   for (int i = 0; i < 13; i++)_backward_exec[i] *= B;
 
 
-  BPS_LOG(INFO) << "initilized end.";
+  // BPS_LOG(INFO) << "initilized end.";
   if (type == REDUCE && BytePSGlobal::GetNccl()->IsSignalRoot()) {
     _is_scheduled = true;
   } else {
@@ -194,7 +195,8 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
         if(_dequeue != 1){
         //   BPS_LOG(DEBUG) << "Position 1" << " pointer: " <<  _pointer <<" stagestart: " << _stagestart << " mystack empty:" <<  _mystack.empty() \
         //         << "task name: " << task -> tensor_name ; 
- 
+          if(_stagestart)
+            BPS_LOG(INFO) << "enstack";
           bool taskisstart = task -> priority == -1 * _grad_checkpoint[_pointer]  && _stagestart ;
           bool taskisproc = !_mystack.empty() && task -> priority > -1 * _grad_checkpoint[_pointer] \ 
                     && task -> priority  < -1 * _grad_checkpoint[_pointer - 1] \
@@ -240,12 +242,10 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
             }
           }
           // BPS_LOG(DEBUG) << "Position 4:"  << "_sq size is: "<< _sq.size();
-  
           continue;
-        }            
-        // Size = Bandwidth * exectime , size decreased by the pop operation of mystack.
-       // BPS_LOG(DEBUG) << "Task: " <<  task-> priority << "I have meet zero: " << _meetzero << " and door is open: " << _dooropen;
-        
+        }        
+            
+        BPS_LOG(INFO) << "stack";
         if(task -> priority == 0) {
           _meetzero = 1;
          BPS_LOG(DEBUG) << "Meet zero." << "my stack size: " << _mystack.size();
