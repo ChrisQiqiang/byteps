@@ -195,8 +195,8 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
         if(_dequeue != 1){
         //   BPS_LOG(DEBUG) << "Position 1" << " pointer: " <<  _pointer <<" stagestart: " << _stagestart << " mystack empty:" <<  _mystack.empty() \
         //         << "task name: " << task -> tensor_name ; 
-          if(_stagestart)
-            BPS_LOG(INFO) << "enstack";
+          // if(_stagestart)
+          //   BPS_LOG(INFO) << "enstack";
           bool taskisstart = task -> priority == -1 * _grad_checkpoint[_pointer]  && _stagestart ;
           bool taskisproc = !_mystack.empty() && task -> priority > -1 * _grad_checkpoint[_pointer] \ 
                     && task -> priority  < -1 * _grad_checkpoint[_pointer - 1] \
@@ -363,7 +363,7 @@ void BytePSScheduledQueue::reportFinish(std::shared_ptr<TensorTableEntry> task) 
         {
             BPS_LOG(INFO) << "Clear.";
             _dequeue = 0;
-            _pointer = 12;
+            _pointer = _init_pointer;
             _stagestart = 1;
             _meetzero = 0;
             _sizepointer = 0;
