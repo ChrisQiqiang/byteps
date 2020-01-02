@@ -42,7 +42,7 @@ BytePSScheduledQueue::BytePSScheduledQueue(QueueType type) {
     {
       int tmp1[13] = {-1, 1, 13, 27, 37, 0, 77, 90, 103, 117, 130, 143, 156};
       double tmp2[13] = { 71.35, 49.05, 8.3, 0, 0, 53, 44, 64, 90, 74, 58, 15, 0}; // backward execution time
-      int _init_pointer = 4;
+      _init_pointer = 4;
       for(int i = 0; i <= _init_pointer; i++){
         _grad_checkpoint[i] = tmp1[i];
         _backward_exec[i] = tmp2[i];
