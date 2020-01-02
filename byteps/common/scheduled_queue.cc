@@ -264,7 +264,8 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
             }      
         }
         else if(_current_window_size < task -> len ) {//we cannot change the value of tensor_part if door is closed.
-          BPS_LOG(INFO) << "PUSH gradient after 0: " << tmp << "  window size" << _current_window_size << "  window contents: " << _mywindow.size() << "  PUSH window is closed.";
+         // BPS_LOG(INFO) << "PUSH gradient after 0: " << tmp << "  window size" << _current_window_size \
+            << "  window contents: " << _mywindow.size() << "  PUSH window is closed.";
           break;
         }
         else {         
