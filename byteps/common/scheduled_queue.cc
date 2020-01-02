@@ -240,7 +240,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
           continue;
         }        
 
-        if(task -> priority == 0) {
+        if(_sizepointer == _init_pointer) {
           _meetzero = 1;
          BPS_LOG(DEBUG) << "Meet zero." << "my stack size: " << _mystack.size();
          }
