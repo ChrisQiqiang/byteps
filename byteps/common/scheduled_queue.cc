@@ -34,7 +34,7 @@ BytePSScheduledQueue::BytePSScheduledQueue(QueueType type) {
   if (getenv("DIFFERENCE_BOUND"))
     _difference_bound = atoi(getenv("DIFFERENCE_BOUND"));
   if (getenv("BANDWIDTH"))
-    B = atoi(getenv("DIFFERENCE_BOUND"))
+    B = atoi(getenv("DIFFERENCE_BOUND"));
 
   if(getenv("MODEL"))
   {
