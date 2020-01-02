@@ -205,8 +205,6 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
           bool proctagged = !_mystack.empty() && _tensor_part[(_mystack.top() + 1) * -1] \
                     && _mystack.top() + 1 > -1 * _grad_checkpoint[_pointer] \ 
                     && _mystack.top() + 1  < -1 * _grad_checkpoint[_pointer - 1];                                    ;
-          if(!_mystack.empty() && _mystack.top() == -156) 
-            BPS_LOG(DEBUG) << "proctagged when top is -156: " << proctagged; 
           if( taskisstart || taskisproc || starttagged || proctagged)
           {
             if(starttagged)
@@ -244,7 +242,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
           // BPS_LOG(DEBUG) << "Position 4:"  << "_sq size is: "<< _sq.size();
           continue;
         }        
-            
+
         BPS_LOG(INFO) << "stack";
         if(task -> priority == 0) {
           _meetzero = 1;
