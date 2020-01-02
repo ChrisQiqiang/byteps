@@ -33,13 +33,15 @@ BytePSScheduledQueue::BytePSScheduledQueue(QueueType type) {
     _utilization_size = atoi(getenv("UTILIZATION_SIZE"));
   if (getenv("DIFFERENCE_BOUND"))
     _difference_bound = atoi(getenv("DIFFERENCE_BOUND"));
-    
+  if (getenv("BANDWIDTH"))
+    B = atoi(getenv("DIFFERENCE_BOUND"))
+
   if(getenv("MODEL"))
   {
     if(!strcmp(getenv("MODEL"), "vgg19"))
     {
       int tmp1[13] = {-1, 1, 13, 27, 37, 0, 77, 90, 103, 117, 130, 143, 156};
-      int tmp2[13] = { 71.35, 49.05, 8.3, 0, 0, 53, 44, 64, 90, 74, 58, 15, 0}; // backward execution time
+      double tmp2[13] = { 71.35, 49.05, 8.3, 0, 0, 53, 44, 64, 90, 74, 58, 15, 0}; // backward execution time
       int _init_pointer = 4;
       for(int i = 0; i <= _init_pointer; i++){
         _grad_checkpoint[i] = tmp1[i];
@@ -55,7 +57,7 @@ BytePSScheduledQueue::BytePSScheduledQueue(QueueType type) {
   for (int i = 0; i < 13; i++)_backward_exec[i] *= B;
 
 
-  
+  BPS_LOG(INFO) << "initilized end.";
   if (type == REDUCE && BytePSGlobal::GetNccl()->IsSignalRoot()) {
     _is_scheduled = true;
   } else {
