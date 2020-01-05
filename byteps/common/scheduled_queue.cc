@@ -360,7 +360,8 @@ void BytePSScheduledQueue::reportFinish(std::shared_ptr<TensorTableEntry> task) 
         //   BPS_LOG(DEBUG) << "after erase: " << "  mywindow size:" << _current_window_size << " TOP element is: " << *(_mywindow.begin());    
         if(_mystack.empty() && _meetzero && _mywindow.size() == 0)
         {
-            BPS_LOG(INFO) << "Clear.";
+            iteration++;
+            BPS_LOG(INFO) << "Clear." << "iteration num: " <<iteration;
             _dequeue = 0;
             _pointer = _init_pointer;
             _stagestart = 1;

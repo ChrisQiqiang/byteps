@@ -75,6 +75,8 @@ class BytePSScheduledQueue {
   int _init_pointer = 12;
   int B = 125000;
 
+  int iteration = 0;
+
 };
 }  // namespace common
 }  // namespace byteps
