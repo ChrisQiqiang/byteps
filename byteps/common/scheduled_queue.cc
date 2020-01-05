@@ -223,7 +223,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
               _tensor_part[task -> priority * -1] = task -> total_partnum;
               for(int x = 0; x< task -> total_partnum; x++){
                 _mystack.push(task -> priority);
-                BPS_LOG(INFO) << "ENQUEUE element firstly: " << task -> priority ;
+                BPS_LOG(DEBUG) << "ENQUEUE element firstly: " << task -> priority ;
               }
             }
             if(!_mystack.empty() &&  _mystack.top() * -1 == _grad_checkpoint[_pointer - 1] + 1 )
@@ -242,14 +242,14 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
 
         if(_sizepointer == _init_pointer) {
           _meetzero = 1;
-         BPS_LOG(DEBUG) << "Meet zero." << "my stack size: " << _mystack.size();
+         BPS_LOG(INFO) << "Meet zero." << "my stack size: " << _mystack.size();
          }
         if(!_meetzero)
         {
             if(task -> priority !=  _mystack.top())continue; 
             if(dynamic_size > task -> len){
               dynamic_size -= task -> len;
-              BPS_LOG(INFO) << "dequeue element: " << task -> tensor_name << "dynamic size now is: " << dynamic_size;
+              BPS_LOG(DEBUG) << "dequeue element: " << task -> tensor_name << "dynamic size now is: " << dynamic_size;
               _sq.erase(it);
               _mystack.pop();
               BPS_LOG(DEBUG) << "PUSH gradient before 0: " << tmp ;
@@ -268,8 +268,9 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
             << "  window contents: " << _mywindow.size() << "  PUSH window is closed.";
           break;
         }
-        else {         
-            // if(!_mystack.empty() && task -> priority !=  _mystack.top())continue;
+        else {               
+            if(!_mystack.empty() && task -> priority !=  _mystack.top())continue;
+             BPS_LOG(INFO) << "Position1: " <<tmp;
             // // _dooropen--;
             // int ins = task -> priority * -1;
             // if(!_mywindow.empty() && ins - *(_mywindow.begin()) > _difference_bound && _current_window_size > _utilization_size)
@@ -278,9 +279,9 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
             // _mywindow.insert(task -> priority * -1);
             // BPS_LOG(DEBUG) << "_mywindow.insert" << (task -> priority * -1);
             _sq.erase(it);
+            BPS_LOG(INFO) << "Position2, mystack sizeis : " << _mystack.size();
             _mystack.pop();
             BPS_LOG(INFO) << "PUSH gradient after 0: " << tmp << " my window size: " << _current_window_size ;
-
           }
         //  BPS_LOG(DEBUG) << "transferred tensor num: " << _tensor_num  << "  empty: " << _mystack.empty() << " size of myqueue: " << _mystack.size();
         task->ready_event = nullptr;
