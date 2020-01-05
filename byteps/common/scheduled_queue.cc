@@ -277,9 +277,9 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
             // _current_window_size -= task -> len;
             // _mywindow.insert(task -> priority * -1);
             // BPS_LOG(DEBUG) << "_mywindow.insert" << (task -> priority * -1);
-            // _sq.erase(it);
-            // _mystack.pop();
-            // BPS_LOG(INFO) << "PUSH gradient after 0: " << tmp << " my window size: " << _current_window_size ;
+            _sq.erase(it);
+            _mystack.pop();
+            BPS_LOG(INFO) << "PUSH gradient after 0: " << tmp << " my window size: " << _current_window_size ;
 
           }
         //  BPS_LOG(DEBUG) << "transferred tensor num: " << _tensor_num  << "  empty: " << _mystack.empty() << " size of myqueue: " << _mystack.size();
