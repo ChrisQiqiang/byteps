@@ -242,7 +242,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
 
         if(_sizepointer == _init_pointer) {
           _meetzero = 1;
-         BPS_LOG(INFO) << "Meet zero." << "my stack size: " << _mystack.size();
+        //  BPS_LOG(INFO) << "Meet zero." << "my stack size: " << _mystack.size();
          }
         if(!_meetzero)
         {
@@ -270,7 +270,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
         }
         else {               
             if(!_mystack.empty() && task -> priority !=  _mystack.top())continue;
-             BPS_LOG(INFO) << "Position1: " <<tmp;
+            //  BPS_LOG(INFO) << "Position1: " <<tmp;
             // // _dooropen--;
             // int ins = task -> priority * -1;
             // if(!_mywindow.empty() && ins - *(_mywindow.begin()) > _difference_bound && _current_window_size > _utilization_size)
@@ -279,9 +279,9 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
             // _mywindow.insert(task -> priority * -1);
             // BPS_LOG(DEBUG) << "_mywindow.insert" << (task -> priority * -1);
             _sq.erase(it);
-            BPS_LOG(INFO) << "Position2, mystack sizeis : " << _mystack.size();
+            // BPS_LOG(INFO) << "Position2, mystack sizeis : " << _mystack.size();
             _mystack.pop();
-            BPS_LOG(INFO) << "PUSH gradient after 0: " << tmp << " my window size: " << _current_window_size ;
+            // BPS_LOG(INFO) << "PUSH gradient after 0: " << tmp << " my window size: " << _current_window_size ;
           }
         //  BPS_LOG(DEBUG) << "transferred tensor num: " << _tensor_num  << "  empty: " << _mystack.empty() << " size of myqueue: " << _mystack.size();
         task->ready_event = nullptr;
