@@ -269,17 +269,17 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
           break;
         }
         else {         
-            if(!_mystack.empty() && task -> priority !=  _mystack.top())continue;
-            // _dooropen--;
-            int ins = task -> priority * -1;
-            if(!_mywindow.empty() && ins - *(_mywindow.begin()) > _difference_bound && _current_window_size > _utilization_size)
-              break;
-            _current_window_size -= task -> len;
-            _mywindow.insert(task -> priority * -1);
-            BPS_LOG(DEBUG) << "_mywindow.insert" << (task -> priority * -1);
-            _sq.erase(it);
-            _mystack.pop();
-            BPS_LOG(INFO) << "PUSH gradient after 0: " << tmp << " my window size: " << _current_window_size ;
+            // if(!_mystack.empty() && task -> priority !=  _mystack.top())continue;
+            // // _dooropen--;
+            // int ins = task -> priority * -1;
+            // if(!_mywindow.empty() && ins - *(_mywindow.begin()) > _difference_bound && _current_window_size > _utilization_size)
+            //   break;
+            // _current_window_size -= task -> len;
+            // _mywindow.insert(task -> priority * -1);
+            // BPS_LOG(DEBUG) << "_mywindow.insert" << (task -> priority * -1);
+            // _sq.erase(it);
+            // _mystack.pop();
+            // BPS_LOG(INFO) << "PUSH gradient after 0: " << tmp << " my window size: " << _current_window_size ;
 
           }
         //  BPS_LOG(DEBUG) << "transferred tensor num: " << _tensor_num  << "  empty: " << _mystack.empty() << " size of myqueue: " << _mystack.size();
@@ -349,14 +349,14 @@ void BytePSScheduledQueue::reportFinish(std::shared_ptr<TensorTableEntry> task) 
   if(_qt == PUSH && name.find("gradient") != name.npos) 
   {
     if(_meetzero) {
-        BPS_LOG(DEBUG) << "PUSH element over:" << task ->tensor_name << "  mywindow size:" << _current_window_size << " TOP element is: " <<  *(_mywindow.begin());
-        if(_mywindow.lower_bound(task -> priority * -1) == _mywindow.end())
-          return;
-        _mywindow.erase(_mywindow.lower_bound(task -> priority * -1));
-        _current_window_size += task -> len;
-        // _pullwindow.insert(task -> priority * -1);
-        if(_mywindow.size() > 0 )
-          BPS_LOG(DEBUG) << "after erase: " << "  mywindow size:" << _current_window_size << " TOP element is: " << *(_mywindow.begin());    
+        // BPS_LOG(DEBUG) << "PUSH element over:" << task ->tensor_name << "  mywindow size:" << _current_window_size << " TOP element is: " <<  *(_mywindow.begin());
+        // if(_mywindow.lower_bound(task -> priority * -1) == _mywindow.end())
+        //   return;
+        // _mywindow.erase(_mywindow.lower_bound(task -> priority * -1));
+        // _current_window_size += task -> len;
+        // // _pullwindow.insert(task -> priority * -1);
+        // if(_mywindow.size() > 0 )
+        //   BPS_LOG(DEBUG) << "after erase: " << "  mywindow size:" << _current_window_size << " TOP element is: " << *(_mywindow.begin());    
         if(_mystack.empty() && _meetzero && _mywindow.size() == 0)
         {
             BPS_LOG(INFO) << "Clear.";
