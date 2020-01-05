@@ -72,9 +72,9 @@ class BytePSScheduledQueue {
   int _mywindow_size = 8000000;
   int _utilization_size = 200000;
   int _difference_bound = 20;
-  int _init_pointer = 12;
+  int _init_pointer = 11;
   int B = 125000;
-
+  int _dooropen = 11;
   int iteration = 0;
 
 };
