@@ -15,6 +15,7 @@
 
 #include "scheduled_queue.h"
 #include <algorithm>
+#include <cmath>
 #include "global.h"
 #include "logging.h"
 
@@ -22,17 +23,53 @@ namespace byteps {
 namespace common {
 
 BytePSScheduledQueue::BytePSScheduledQueue(QueueType type) {
-  if ((type == REDUCE || type == PUSH) && BytePSGlobal::GetNccl()->IsSignalRoot()) {
+
+
+  if (getenv("BATCH_SIZE"))
+    batchsize = atoi(getenv("BATCH_SIZE"));
+  if (getenv("MYWINDOW_SIZE"))
+    _mywindow_size = atoi(getenv("MYWINDOW_SIZE"));
+  if (getenv("UTILIZATION_SIZE"))
+    _utilization_size = atoi(getenv("UTILIZATION_SIZE"));
+  if (getenv("DIFFERENCE_BOUND"))
+    _difference_bound = atoi(getenv("DIFFERENCE_BOUND"));
+  if (getenv("BANDWIDTH"))
+    B = atoi(getenv("BANDWIDTH"));
+
+  if(getenv("MODEL"))
+  {
+    if(!strcmp(getenv("MODEL"), "vgg19"))
+    {
+      int tmp1[13] = {-1, 1, 13, 27, 37, 0, 77, 90, 103, 117, 130, 143, 156};
+      double tmp2[13] = { 285.4, 196.2, 33.2, 0, 0, 53, 44, 64, 90, 74, 58, 15, 0}; // backward execution time
+      _init_pointer = 4;
+      for(int i = 0; i <= _init_pointer; i++){
+        _grad_checkpoint[i] = tmp1[i];
+        _backward_exec[i] = tmp2[i];
+      }
+      BPS_LOG(INFO) << "model vgg initilized.";
+    }
+  }
+  //variables initilization
+  _current_window_size = _mywindow_size;
+  _pointer = _init_pointer;
+  //computing transferred size between two blocks.
+  for (int i = 0; i < 13; i++)_backward_exec[i] *= (double)batchsize/32;
+  for (int i = 0; i < 13; i++)_backward_exec[i] *= B;
+
+
+  // BPS_LOG(INFO) << "initilized end.";
+  if (type == REDUCE && BytePSGlobal::GetNccl()->IsSignalRoot()) {
     _is_scheduled = true;
   } else {
     _is_scheduled = false;
   }
 
   size_t credit_in_partition = BytePSGlobal::GetNccl()->GetGroupSize() + 1;
-
-  auto byteps_scheduling_credit = getenv("BYTEPS_SCHEDULING_CREDIT");
-  credit_in_partition = byteps_scheduling_credit ? atoi(byteps_scheduling_credit) : 0;
-  if (!credit_in_partition) { // disable scheduling by default
+  if (getenv("BYTEPS_SCHEDULING_CREDIT")) {
+    credit_in_partition = atoi(getenv("BYTEPS_SCHEDULING_CREDIT"));
+  }
+  if (!credit_in_partition) {
     _is_scheduled = false;
   }
 
@@ -56,6 +93,7 @@ BytePSScheduledQueue::BytePSScheduledQueue(QueueType type) {
       }
       break;
     case PUSH:
+      //BPS_LOG(DEBUG) << "IN PUSH: " << _is_scheduled ;
       if (BytePSGlobal::IsRootDevice()) {
         _rt = BytePSGlobal::GetPushTable();
       }
@@ -69,6 +107,13 @@ BytePSScheduledQueue::BytePSScheduledQueue(QueueType type) {
       if (BytePSGlobal::GetNccl()->IsSignalRoot()) {
         _rt = BytePSGlobal::GetBroadcastTable();
       }
+      break;
+
+    case PULL:
+      if (BytePSGlobal::IsRootDevice()) {
+        _rt = BytePSGlobal::GetPullTable();
+      }
+      _sizepointer=1;
       break;
     default:
       break;
@@ -91,7 +136,7 @@ void BytePSScheduledQueue::addTask(std::shared_ptr<TensorTableEntry> entry) {
         });
   }
   BPS_CHECK(entry->tensor_name != "");
-  BPS_LOG(TRACE) << "Queue " << LogStrings[_qt]
+  BPS_LOG(DEBUG) << "Queue " << LogStrings[_qt]
                  << " addTask: " << entry->tensor_name << " key: " << entry->key
                  << " rank: " << BytePSGlobal::GetLocalRank();
   return;
@@ -130,9 +175,8 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
       }
     }
     if (_is_scheduled) {
-      if ((*it)->len > _credits) {
+      if ((*it)->len > _credits)
         continue;
-      }
     }
     if (_rt) {
       if (!_rt->IsKeyReady((*it)->key)) {
@@ -140,18 +184,123 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
       }
       _rt->ClearReadyCount((*it)->key);
     }
+    std::string tmp = (*it) -> tensor_name;
     task = *it;
-    _sq.erase(it);
-    if (_is_scheduled) {
-      _credits -= task->len;
+  //  BPS_LOG(DEBUG) << _qt << " tensor name: " << tmp;
+
+    if( _qt == PUSH && tmp.find("gradient") != tmp.npos ) 
+    {
+      
+          /////first  enqueue as the gradient block coming, then dequeue dynamically.
+        if(_dequeue != 1){
+          bool taskisstart = task -> priority == -1 * _grad_checkpoint[_pointer]  && _stagestart ;
+          bool taskisproc = !_mystack.empty() && task -> priority > -1 * _grad_checkpoint[_pointer] \ 
+                    && task -> priority  < -1 * _grad_checkpoint[_pointer - 1] \
+                    && task -> priority == _mystack.top() + 1;
+          bool starttagged = _stagestart && _tensor_part[_grad_checkpoint[_pointer]] ;
+          bool proctagged = !_mystack.empty() && _tensor_part[(_mystack.top() + 1) * -1] \
+                    && _mystack.top() + 1 > -1 * _grad_checkpoint[_pointer] \ 
+                    && _mystack.top() + 1  < -1 * _grad_checkpoint[_pointer - 1];                                    ;
+          if( taskisstart || taskisproc || starttagged || proctagged)
+          {
+            if(starttagged)
+              for(int x = 0; x < _tensor_part[_grad_checkpoint[_pointer]]; x++){
+                _mystack.push(_grad_checkpoint[_pointer] * -1);
+                _stagestart = 0;
+                BPS_LOG(DEBUG) << "ENQUEUE at start element not firstly: " << _grad_checkpoint[_pointer] * -1 << " mystack size: " << _mystack.size() ;
+              }
+            
+            else if(proctagged){
+              int tmp = _mystack.top() + 1;
+              for(int x = 0; x < _tensor_part[tmp * -1]; x++){
+                _mystack.push(tmp);
+                BPS_LOG(DEBUG) << "ENQUEUE in proc element not firstly: " << tmp  << " mystack size: " << _mystack.size();
+              }
+            }
+
+            else {
+              if(taskisstart) _stagestart = 0; 
+              _tensor_part[task -> priority * -1] = task -> total_partnum;
+              for(int x = 0; x< task -> total_partnum; x++){
+                _mystack.push(task -> priority);
+                BPS_LOG(DEBUG) << "ENQUEUE element firstly: " << task -> priority ;
+              }
+            }
+            if(!_mystack.empty() &&  _mystack.top() * -1 == _grad_checkpoint[_pointer - 1] + 1 )
+            {
+                _dequeue = 1;
+                dynamic_size = (int)_backward_exec[_sizepointer++];               
+                BPS_LOG(INFO) << "enqueue operation of one stage is over." << "_sizepointer:" << _sizepointer << "mystack top is: " << _mystack.top() \
+                       << "  dynamic size: " << dynamic_size;
+                break;
+                ///////////////////////////initialize dynamic size of this gradient stage.////////////////////////////
+            }
+          }
+          // BPS_LOG(DEBUG) << "Position 4:"  << "_sq size is: "<< _sq.size();
+          continue;
+        }        
+
+        if(_sizepointer == _init_pointer) {
+          _meetzero = 1;
+        //  BPS_LOG(INFO) << "Meet zero." << "my stack size: " << _mystack.size();
+         }
+        if(!_meetzero)
+        {
+            if(task -> priority !=  _mystack.top())continue; 
+            if(dynamic_size > task -> len){
+              dynamic_size -= task -> len;
+              BPS_LOG(DEBUG) << "dequeue element: " << task -> tensor_name << "dynamic size now is: " << dynamic_size;
+              _sq.erase(it);
+              _mystack.pop();
+              BPS_LOG(DEBUG) << "PUSH gradient before 0: " << tmp ;
+            }
+            else{   //nxet stage enstack could begin.
+              _dequeue = 0;
+              _pointer--;
+              _stagestart = 1;
+              // BytePSGlobal::pushsize[_sizepointer] = _mystack.top() + 1;
+              BPS_LOG(DEBUG) << "PUSH: No left size. Waiting for next gradient block.";
+              break;  
+            }      
+        }
+        else if(_dooropen <= 0) {//we cannot change the value of tensor_part if door is closed.  _current_window_size < task -> len
+         // BPS_LOG(INFO) << "PUSH gradient after 0: " << tmp << "  window size" << _current_window_size \
+            << "  window contents: " << _mywindow.size() << "  PUSH window is closed.";
+          break;
+        }
+        else {               
+            if(!_mystack.empty() && task -> priority !=  _mystack.top())continue;
+            //  BPS_LOG(INFO) << "Position1: " <<tmp;
+            _dooropen--;
+            // int ins = task -> priority * -1;
+            // if(!_mywindow.empty() && ins - *(_mywindow.begin()) > _difference_bound && _current_window_size > _utilization_size)
+            //   break;
+            // _current_window_size -= task -> len;
+            // _mywindow.insert(task -> priority * -1);
+            // BPS_LOG(DEBUG) << "_mywindow.insert" << (task -> priority * -1);
+            _sq.erase(it);
+            // BPS_LOG(INFO) << "Position2, mystack sizeis : " << _mystack.size();
+            _mystack.pop();
+            // BPS_LOG(INFO) << "PUSH gradient after 0: " << tmp << " my window size: " << _current_window_size ;
+          }
+        //  BPS_LOG(DEBUG) << "transferred tensor num: " << _tensor_num  << "  empty: " << _mystack.empty() << " size of myqueue: " << _mystack.size();
+        task->ready_event = nullptr;
+        // Add for profiling communication TRACEs
+        recorderTs(task);
+        return task;
     }
 
+    if (_is_scheduled) 
+    {
+        _credits -= task->len;
+    }
+    _sq.erase(it);
     BPS_CHECK(task->tensor_name != "");
-    BPS_LOG(TRACE) << "Queue " << LogStrings[_qt]
+    BPS_LOG(DEBUG) << "Queue " << LogStrings[_qt]
                    << " getTask: " << task->tensor_name << " key: " << task->key
-                   << " rank: " << BytePSGlobal::GetLocalRank();
+                   << " rank: " << BytePSGlobal::GetLocalRank();  
     task->ready_event = nullptr;
-    // Add for profiling communication traces
+    // Add for profiling communication TRACEs
     recorderTs(task);
     return task;
   }
@@ -174,12 +323,12 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask(uint64_t key) {
     _sq.erase(it);
 
     BPS_CHECK(task->tensor_name != "");
-    BPS_LOG(TRACE) << "Queue " << LogStrings[_qt]
+    BPS_LOG(DEBUG) << "Queue " << LogStrings[_qt]
                    << " getTask(key): " << task->tensor_name
                    << " key: " << task->key
                    << " rank: " << BytePSGlobal::GetLocalRank();
     task->ready_event = nullptr;
-    // Add for profiling communication traces
+    // Add for profiling communication TRACEs
     recorderTs(task);
     return task;
   }
@@ -196,6 +345,36 @@ void BytePSScheduledQueue::reportFinish(std::shared_ptr<TensorTableEntry> task) 
   if (_is_scheduled) {
       _credits += task ->  len;
   }
+  std::string name = task -> tensor_name;
+
+  if(_qt == PUSH && name.find("gradient") != name.npos) 
+  {
+    if(_meetzero) {
+        // BPS_LOG(DEBUG) << "PUSH element over:" << task ->tensor_name << "  mywindow size:" << _current_window_size << " TOP element is: " <<  *(_mywindow.begin());
+        // if(_mywindow.lower_bound(task -> priority * -1) == _mywindow.end())
+        //   return;
+        // _mywindow.erase(_mywindow.lower_bound(task -> priority * -1));
+        // _current_window_size += task -> len;
+        // // _pullwindow.insert(task -> priority * -1);
+        // if(_mywindow.size() > 0 )
+        //   BPS_LOG(DEBUG) << "after erase: " << "  mywindow size:" << _current_window_size << " TOP element is: " << *(_mywindow.begin());    
+        _dooropen++;
+        if(_mystack.empty() && _meetzero && _mywindow.size() == 0)
+        {
+            iteration++;
+            BPS_LOG(INFO) << "Clear." << "iteration num: " <<iteration;
+            _dooropen = 11;
+            _dequeue = 0;
+            _pointer = _init_pointer;
+            _stagestart = 1;
+            _meetzero = 0;
+            _sizepointer = 0;
+            _current_window_size = _mywindow_size;
+
+        } 
+    }
+  }
+ 
   return;
   }
 
