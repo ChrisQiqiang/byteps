@@ -394,13 +394,13 @@ uint32_t BytePSScheduledQueue::pendingSize() {
   return _sq.size();
 }
 
-void BytePSScheduledQueue::reportFinish(int size) {
+void BytePSScheduledQueue::reportFinish(std::shared_ptr<TensorTableEntry> task) {
+  std::lock_guard<std::mutex> lock(_mutex);
   if (_is_scheduled) {
-    std::lock_guard<std::mutex> lock(_mutex);
-    _credits += size;
+      _credits += task ->  len;
   }
   return;
-}
+  }
 
 }  // namespace common
 }  // namespace byteps
