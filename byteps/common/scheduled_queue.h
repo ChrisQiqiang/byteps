@@ -67,7 +67,7 @@ namespace byteps {
             int _meetzero = 0;
             int _dooropen = 11;
             int _pulldoor = 0;
-            int batchsize = atoi(getenv("Z_BATCH_SIZE"));
+            int batchsize = 32;
             int _grad_checkpoint[13] = {-1, 9, 22, 35, 50, 62, 77, 90, 103, 117, 130, 143, 156};
             int B = 125000 ;
             double _backward_exec[13] = {23.5, 23, 13, 15, 18.5, 26.5, 22, 32, 45,

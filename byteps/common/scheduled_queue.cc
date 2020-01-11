@@ -60,6 +60,7 @@ namespace byteps {
                     break;
                 case PUSH:
                     if(getenv("BANDWIDTH"))B = atoi(getenv("BANDWIDTH"));
+                    if(getenv("Z_BATCH_SIZE")) batchsize = atoi(getenv("Z_BATCH_SIZE"));
                     for (int i = 0; i < 13; i++) 
                         _backward_exec[i] *= (double)batchsize / 32; 
                     for (int i = 0; i < 13; i++) 
