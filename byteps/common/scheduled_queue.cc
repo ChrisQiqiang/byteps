@@ -421,10 +421,10 @@ namespace byteps {
             return _sq.size();
         }
 
-        void BytePSScheduledQueue::reportFinish(int size) {
+        void BytePSScheduledQueue::reportFinish(std::shared_ptr <TensorTableEntry> task) {
             std::lock_guard <std::mutex> lock(_mutex);
             if (_is_scheduled) {
-                _credits += size;
+                _credits += task -> len;
             }
             if (_qt == PUSH) {
                 if (_meetzero) {
