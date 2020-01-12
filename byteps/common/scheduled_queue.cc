@@ -196,7 +196,7 @@ namespace byteps {
                 //         return nullptr;
                 //     }
                 // }
-                while(expected_priority != _grad_checkpoint[_pointer - 1])){
+                while(expected_priority != _grad_checkpoint[_pointer - 1]){
                       if(_tensor_part[expected_priority]){
                         for (int x = 0; x < _tensor_part[expected_priority]; x++)
                           _mystack.push(expected_priority * -1);
