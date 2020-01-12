@@ -236,13 +236,13 @@ namespace byteps {
                 return task;
             } else {
                 for (auto it = _sq.begin(); it != _sq.end(); ++it) {
-
+                    std::string tmp = (*it) -> tensor_name;
                     if ((*it)->ready_event) {
                         if (!(*it)->ready_event->Ready()) {
                             continue;
                         }
                     }
-                    if (_is_scheduled) {
+                    if (_is_scheduled && tmp.find("gradient") != tmp.npos) {
                         if ((*it)->len > _credits)
                             continue;
                     }
@@ -253,12 +253,12 @@ namespace byteps {
                         _rt->ClearReadyCount((*it)->key);
                     }
                     task = *it;
-                    if (_is_scheduled) {
+                    if (_is_scheduled && tmp.find("gradient") != tmp.npos) {
                         _credits -= task->len;
                     }
                     _sq.erase(it);
                     BPS_CHECK(task->tensor_name != "");
-                    BPS_LOG(INFO) << "Queue " << LogStrings[_qt]
+                    BPS_LOG(DEBUG) << "Queue " << LogStrings[_qt]
                                    << " getTask: " << task->tensor_name << " key: " << task->key
                                    << " rank: " << BytePSGlobal::GetLocalRank();
                     task->ready_event = nullptr;
