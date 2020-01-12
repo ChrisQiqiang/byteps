@@ -207,7 +207,7 @@ namespace byteps {
                         gettimeofday(&tmptime, NULL);
                         timenow = ((long)tmptime.tv_sec)*1000+(long)tmptime.tv_usec/1000;
                         //update B according to the last stage transfer information;
-                        if(last_time != 0)
+                        if(last_time != 0 && timenow != last_time)
                             B = (get_tcp_bytes() - last_tcp_size) / (timenow - last_time);
                         dynamic_size = (int)(_backward_exec[_sizepointer++] * B);
                         _dequeue = 1;
@@ -228,11 +228,11 @@ namespace byteps {
                 if(_ms.size() == 0 && _mystack.empty() &&  _sizepointer > 0 && _sizepointer < 12 && _dequeue){
                     _dequeue = 0;
                     _pointer--;
-                    BPS_LOG(INFO) << "has no element to push, wait for the next stage.";
+                    //BPS_LOG(INFO) << "has no element to push, wait for the next stage.";
                     return nullptr;
                 }
                 else if(_ms.size() == 0){
-                  BPS_LOG(INFO)  << " _ms size:" <<_ms.size() << "just return";
+                 // BPS_LOG(INFO)  << " _ms size:" <<_ms.size() << "just return";
                   return nullptr;
                 }
                 msit = findTask(_mystack.top());
@@ -248,12 +248,12 @@ namespace byteps {
                         dynamic_size -= task->len;
                         _ms.erase(msit);
                         _mystack.pop();
-                        if(_ms.size() < 10)
-                          BPS_LOG(INFO)  << " _ms size:" <<_ms.size();
+                        // if(_ms.size() < 10)
+                        //   BPS_LOG(INFO)  << " _ms size:" <<_ms.size();
                     } else {
                         _dequeue = 0;
                         _pointer--;
-                        BPS_LOG(INFO) << "PUSH for each stage is over. dequeue = 0" << " _ms size:" <<_ms.size();
+                        //BPS_LOG(INFO) << "PUSH for each stage is over. dequeue = 0" << " _ms size:" <<_ms.size();
                         //update backward_exec here according to real-time bandwidth monitor.
                         // BytePSGlobal::pushsize[_sizepointer] = _mystack.top() + 1;
                         return nullptr;
@@ -263,7 +263,7 @@ namespace byteps {
                   _ms.erase(msit);
                   _mystack.pop();
                   _credits -= task->len;
-                  BPS_LOG(INFO) << "credit size:" << _credits << " _ms size:" <<_ms.size();
+                  //BPS_LOG(INFO) << "credit size:" << _credits << " _ms size:" <<_ms.size();
                 }
                 else{
                   return nullptr;
