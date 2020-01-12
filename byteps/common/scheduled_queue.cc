@@ -185,22 +185,18 @@ namespace byteps {
             std::shared_ptr <TensorTableEntry> task;
             std::multiset < std::shared_ptr < TensorTableEntry >> ::iterator msit;
             if (_qt == PUSH && !_dequeue && _ms.size() > 0 && expected_priority >= 0) {
-                while(expected_priority != _grad_checkpoint[_pointer - 1]){
-                      if(_tensor_part[expected_priority]){
-                        for (int x = 0; x < _tensor_part[expected_priority]; x++)
-                          _mystack.push(expected_priority * -1);
-                        expected_priority--;
-                      }
-                      else{
+                while(true){
+                      if(!_tensor_part[expected_priority]){
                           msit = findTask(expected_priority * -1);
                           if (msit == _ms.end()) 
                               return nullptr;
                           task = *msit;
                           _tensor_part[expected_priority] = task->total_partnum;
-                          for (int x = 0; x < _tensor_part[expected_priority]; x++) 
-                              _mystack.push(expected_priority * -1);
-                          expected_priority--;
                       }
+                      for (int x = 0; x < _tensor_part[expected_priority]; x++) 
+                          _mystack.push(expected_priority * -1);
+                      BPS_LOG(INFO) << "has pushed element: " << expected_priority;
+                      expected_priority--;
                       if (expected_priority == _grad_checkpoint[_pointer - 1]) {
                       //...............................................................................//
                         //initial variables for each stage.
@@ -216,13 +212,16 @@ namespace byteps {
                         _dequeue = 1;
                         BPS_LOG(INFO) << "dynamic size update: sizepointer" << _sizepointer << "  Bandwidth:" << B \
                                   <<" now dynamic size is:" << dynamic_size;
-                        BPS_LOG(INFO) << "last time is:" << last_time << "  time now:" << timenow;
-                        BPS_LOG(INFO) << "last tcp size:" << last_tcp_size << " tcp size now:" << get_tcp_bytes();
+                        //BPS_LOG(INFO) << "last time is:" << last_time << "  time now:" << timenow;
+                        //BPS_LOG(INFO) << "last tcp size:" << last_tcp_size << " tcp size now:" << get_tcp_bytes();
                         last_time = timenow;
                         last_tcp_size = get_tcp_bytes();
+                        return nullptr;
                     }
+                    if(expected_priority < 0)
+                      return nullptr;
                 }
-                return nullptr;
+                // BPS_LOG(INFO) << "DEAD LOOP!" ;
             }
             if (_qt == PUSH && _ms.size() > 0) {
                 msit = findTask(_mystack.top());
