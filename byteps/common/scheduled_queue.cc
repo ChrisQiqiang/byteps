@@ -30,7 +30,7 @@ namespace byteps {
                 int key_pos;
                 std::getline(fin,inbuf,'\n');
                 key_pos = inbuf.find("eth0",0);
-                if(key_pos != string::npos && inbuf.find("peth0") == string::npos)
+                if(key_pos != std::string::npos && inbuf.find("peth0") == std::string::npos)
                 {
                   std::string & str = inbuf.erase(0,key_pos);
                   unsigned long v;
@@ -212,7 +212,7 @@ namespace byteps {
                     //initial variables for each stage.
                     long timenow;
                     unsigned long tcpsizenow;
-                    struct std::timeval tmptime;
+                    struct timeval tmptime;
                     gettimeofday(&tmptime, NULL);
                     timenow = ((long)tmptime.tv_sec)*1000+(long)tmptime.tv_usec/1000;
                     //update B according to the last stage transfer information;
