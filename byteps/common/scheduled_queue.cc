@@ -29,14 +29,14 @@ namespace byteps {
                 std::string inbuf;
                 int key_pos;
                 std::getline(fin,inbuf,'\n');
-                key_pos = inbuf.find("eth0",0);
-                if(key_pos != std::string::npos && inbuf.find("peth0") == std::string::npos)
+                key_pos = inbuf.find("ens3",0);
+                if(key_pos != std::string::npos && inbuf.find("pens3") == std::string::npos)
                 {
                   std::string & str = inbuf.erase(0,key_pos);
                   unsigned long v;
                   float useage_net;
                   std::sscanf(str.c_str(),
-                      "eth0:%lu %lu %lu %lu %lu %lu %lu %lu \
+                      "ens3:%lu %lu %lu %lu %lu %lu %lu %lu \
                         %lu %lu %lu %lu %lu %lu %lu %lu/n",
                         &v,&v,&v,&v,&v,&v,&v,&v,\
                         &res,&v,&v,&v,&v,&v,&v,&v);
@@ -184,18 +184,7 @@ namespace byteps {
             std::lock_guard <std::mutex> lock(_mutex);
             std::shared_ptr <TensorTableEntry> task;
             std::multiset < std::shared_ptr < TensorTableEntry >> ::iterator msit;
-            if (_qt == PUSH && !_dequeue && _ms.size() > 0) {
-                // while (_tensor_part[expected_priority] > 0) {
-                //     for (int x = 0; x < _tensor_part[expected_priority]; x++) {
-                //         _mystack.push(expected_priority * -1);
-                //     }
-                //     expected_priority--;
-                //     if (expected_priority == _grad_checkpoint[_pointer - 1]) {
-                //         _dequeue = 1;
-                //         dynamic_size = (int)_backward_exec[_sizepointer++];
-                //         return nullptr;
-                //     }
-                // }
+            if (_qt == PUSH && !_dequeue && _ms.size() > 0 && expected_priority >= 0) {
                 while(expected_priority != _grad_checkpoint[_pointer - 1]){
                       if(_tensor_part[expected_priority]){
                         for (int x = 0; x < _tensor_part[expected_priority]; x++)
@@ -233,19 +222,6 @@ namespace byteps {
                         last_tcp_size = get_tcp_bytes();
                     }
                 }
-
-                // msit = findTask(expected_priority * -1);
-                // if (msit == _ms.end()) {
-                //     return nullptr;
-                // }
-                // task = *msit;
-
-                // _tensor_part[expected_priority] = task->total_partnum;
-                // for (int x = 0; x < _tensor_part[expected_priority]; x++) {
-                //     _mystack.push(expected_priority * -1);
-                // }
-                // expected_priority--;
-
                 return nullptr;
             }
             if (_qt == PUSH && _ms.size() > 0) {
