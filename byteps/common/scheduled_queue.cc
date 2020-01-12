@@ -201,7 +201,7 @@ namespace byteps {
                         _dequeue = 0;
                         _pointer--;
                         _stagestart = 1;
-                        BytePSGlobal::pushsize[_sizepointer] = _mystack.top() + 1;
+                        // BytePSGlobal::pushsize[_sizepointer] = _mystack.top() + 1;
                         return nullptr;
                     }
                 }
@@ -235,7 +235,7 @@ namespace byteps {
                     _stagestart = 1;
                     _meetzero = 0;
                     _sizepointer = 0;
-                    _credits = BytePSGlobal::GetPartitionBound() * credit_in_partition;
+                    // _credits = BytePSGlobal::GetPartitionBound() * credit_in_partition;
                     // _dooropen = 11;
                 }
                 task->ready_event = nullptr;
