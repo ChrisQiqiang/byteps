@@ -225,7 +225,7 @@ namespace byteps {
                 // BPS_LOG(INFO) << "DEAD LOOP!" ;
             }
             if (_qt == PUSH && _gradient_born) {
-                if(_ms.size() == 0 && _mystack.empty() && _sizepointer < 12){
+                if(_ms.size() == 0 && _mystack.empty() &&  _sizepointer > 0 && _sizepointer < 12){
                     _dequeue = 0;
                     _pointer--;
                     BPS_LOG(INFO) << "has no element to push, wait for the next stage.";
