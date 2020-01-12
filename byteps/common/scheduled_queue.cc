@@ -21,6 +21,33 @@
 namespace byteps {
     namespace common {
 
+        unsigned long get_tcp_bytes(){
+              unsigned long res;
+          		ifstream fin("/proc/net/dev");                    
+              while(!fin.eof())
+              {
+                string inbuf;
+                int key_pos;
+                getline(fin,inbuf,'\n');
+                key_pos = inbuf.find("eth0",0);
+                if(key_pos != string::npos && inbuf.find("peth0") == string::npos)
+                {
+                  string & str = inbuf.erase(0,key_pos);
+                  
+                  unsigned long v;
+                  float useage_net;
+                  sscanf(str.c_str(),
+                      "eth0:%lu %lu %lu %lu %lu %lu %lu %lu \
+                        %lu %lu %lu %lu %lu %lu %lu %lu/n",
+                        &v,&v,&v,&v,&v,&v,&v,&v,\
+                        &res,&v,&v,&v,&v,&v,&v,&v);
+                  fin.close();
+                  break;
+                }
+              }	
+              return 	res;            
+        }
+
         BytePSScheduledQueue::BytePSScheduledQueue(QueueType type) {
             if ((type == REDUCE || type == PUSH) && BytePSGlobal::GetNccl()->IsSignalRoot()) {
                 _is_scheduled = true;
@@ -61,8 +88,8 @@ namespace byteps {
                     if(getenv("Z_BATCH_SIZE")) batchsize = atoi(getenv("Z_BATCH_SIZE"));
                     for (int i = 0; i < 13; i++) 
                         _backward_exec[i] *= (double)batchsize / 32; 
-                    for (int i = 0; i < 13; i++) 
-                        _backward_exec[i] *= B;
+                    // for (int i = 0; i < 13; i++) 
+                    //     _backward_exec[i] *= B;
                     if (BytePSGlobal::IsRootDevice()) {
                         _rt = BytePSGlobal::GetPushTable();
                     }
@@ -151,6 +178,9 @@ namespace byteps {
             }
         }
 
+
+
+
         std::shared_ptr <TensorTableEntry> BytePSScheduledQueue::getTask() {
             std::lock_guard <std::mutex> lock(_mutex);
             std::shared_ptr <TensorTableEntry> task;
@@ -179,8 +209,20 @@ namespace byteps {
                 }
                 expected_priority--;
                 if (expected_priority == _grad_checkpoint[_pointer - 1]) {
+                  //...............................................................................//
+                    //initial variables for each stage.
+                    long timenow;
+                    unsigned long tcpsizenow;
+                    struct std::timeval tmptime;
+                    gettimeofday(&tmptime, NULL);
+                    timenow = ((long)tmptime.tv_sec)*1000+(long)tmptime.tv_usec/1000;
+                    //update B according to the last stage transfer information;
+                    if(last_time != 0)
+                        B = (get_tcp_bytes() - last_tcp_size) / (timenow - last_time);
+                    dynamic_size = (int)(_backward_exec[_sizepointer++] * B);
                     _dequeue = 1;
-                    dynamic_size = (int)_backward_exec[_sizepointer++];
+                    last_time = timenow;
+                    last_tcp_size = get_tcp_bytes();
                 }
                 return nullptr;
             }
@@ -202,6 +244,8 @@ namespace byteps {
                         _dequeue = 0;
                         _pointer--;
                         _stagestart = 1;
+                        //update backward_exec here according to real-time bandwidth monitor.
+
                         // BytePSGlobal::pushsize[_sizepointer] = _mystack.top() + 1;
                         return nullptr;
                     }
