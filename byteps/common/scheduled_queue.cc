@@ -304,7 +304,7 @@ namespace byteps {
         void BytePSScheduledQueue::reportFinish(std::shared_ptr <TensorTableEntry> task) {
             std::lock_guard <std::mutex> lock(_mutex);
             std::string tmp = task -> tensor_name;
-            if ((_is_scheduled && _qt != PUSH) || _qt == PUSH && tmp.find("gradient") != tmp.npos && _meetzero)) {
+            if ((_is_scheduled && _qt != PUSH) || (_qt == PUSH && tmp.find("gradient") != tmp.npos && _meetzero)) {
                 _credits += task -> len;
             }
             // if (_qt == PUSH) {
