@@ -306,11 +306,6 @@ namespace byteps {
             if ((_is_scheduled && _qt != PUSH) || (_qt == PUSH && _meetzero)) {
                 _credits += task -> len;
             }
-            if (_qt == PUSH && _meetzero) {
-                    if (_dooropen < 11)
-                        _dooropen++;
-                }
-            }
             // if (_qt == PUSH) {
             //     if (_meetzero) {
             //         if (_dooropen < 11)
