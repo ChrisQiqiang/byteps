@@ -195,7 +195,7 @@ namespace byteps {
                       }
                       for (int x = 0; x < _tensor_part[expected_priority]; x++) 
                           _mystack.push(expected_priority * -1);
-                      BPS_LOG(INFO) << "has pushed element: " << expected_priority;
+                      //BPS_LOG(INFO) << "has pushed element: " << expected_priority;
                       expected_priority--;
                       if (expected_priority == _grad_checkpoint[_pointer - 1]) {
                       //...............................................................................//
@@ -210,7 +210,7 @@ namespace byteps {
                             B = (get_tcp_bytes() - last_tcp_size) / (timenow - last_time);
                         dynamic_size = (int)(_backward_exec[_sizepointer++] * B);
                         _dequeue = 1;
-                        BPS_LOG(INFO) << "dynamic size update: sizepointer" << _sizepointer << "  Bandwidth:" << B \
+                        //BPS_LOG(INFO) << "dynamic size update: sizepointer" << _sizepointer << "  Bandwidth:" << B \
                                   <<" now dynamic size is:" << dynamic_size;
                         //BPS_LOG(INFO) << "last time is:" << last_time << "  time now:" << timenow;
                         //BPS_LOG(INFO) << "last tcp size:" << last_tcp_size << " tcp size now:" << get_tcp_bytes();
@@ -237,6 +237,8 @@ namespace byteps {
                         dynamic_size -= task->len;
                         _ms.erase(msit);
                         _mystack.pop();
+                        if(_ms.size() < 10)
+                          BPS_LOG(INFO)  << " _ms size:" <<_ms.size();
                     } else {
                         _dequeue = 0;
                         _pointer--;
@@ -254,8 +256,6 @@ namespace byteps {
                 else{
                   return nullptr;
                 }
-                if(task -> priority > -15)
-                  BPS_LOG(INFO) << "PUSH gettask: " << task -> tensor_name;
                 task->ready_event = nullptr;
                 recorderTs(task);
                 return task;
@@ -278,6 +278,8 @@ namespace byteps {
                         _rt->ClearReadyCount((*it)->key);
                     }
                     task = *it;
+                    if(_qt == PUSH && tmp.find("parameter") == tmp.npos)
+                      return nullptr;//fix the parameter bug.
                     if (_is_scheduled && tmp.find("gradient") != tmp.npos) {
                         _credits -= task->len;
                     }
