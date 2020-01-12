@@ -206,6 +206,11 @@ namespace byteps {
                     }
                 }
                 else if(_credits > task -> len){
+                  msit = findTask(_mystack.top());
+                  if (msit == _ms.end()) {
+                        return nullptr;
+                  }
+                  task = *msit;
                   _ms.erase(msit);
                   _mystack.pop();
                   _credits -= task->len;
@@ -223,13 +228,15 @@ namespace byteps {
                 //     _mystack.pop();
                 // }
                 if (_mystack.empty() && _meetzero) {
+                    BPS_LOG(INFO) << "Clear.";
                     _dequeue = 0;
                     _pointer = 12;
                     expected_priority = _grad_checkpoint[_pointer];
                     _stagestart = 1;
                     _meetzero = 0;
                     _sizepointer = 0;
-                    _dooropen = 11;
+                    _credits = BytePSGlobal::GetPartitionBound() * credit_in_partition;
+                    // _dooropen = 11;
                 }
                 task->ready_event = nullptr;
                 recorderTs(task);
