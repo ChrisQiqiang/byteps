@@ -228,7 +228,7 @@ namespace byteps {
                 if(_ms.size() == 0 && _mystack.empty()){
                     _dequeue = 0;
                     _pointer--;
-                    BPS_LOG(INFO) << "has no element to push, wait for the next stage."
+                    BPS_LOG(INFO) << "has no element to push, wait for the next stage.";
                 }
                 else if(_ms.size() == 0){
                   BPS_LOG(INFO)  << " _ms size:" <<_ms.size() << "just return";
