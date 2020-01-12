@@ -241,7 +241,7 @@ namespace byteps {
                     // _credits = BytePSGlobal::GetPartitionBound() * credit_in_partition;
                     // _dooropen = 11;
                 }
-                BPS_LOG(INFO) << "PUSH gettask: " << task -> tensor_name;
+                BPS_LOG(DEBUG) << "PUSH gettask: " << task -> tensor_name;
                 task->ready_event = nullptr;
                 recorderTs(task);
                 return task;
