@@ -23,20 +23,19 @@ namespace byteps {
 
         unsigned long get_tcp_bytes(){
               unsigned long res;
-          		ifstream fin("/proc/net/dev");                    
+          		std::ifstream fin("/proc/net/dev");                    
               while(!fin.eof())
               {
-                string inbuf;
+                std::string inbuf;
                 int key_pos;
-                getline(fin,inbuf,'\n');
+                std::getline(fin,inbuf,'\n');
                 key_pos = inbuf.find("eth0",0);
                 if(key_pos != string::npos && inbuf.find("peth0") == string::npos)
                 {
-                  string & str = inbuf.erase(0,key_pos);
-                  
+                  std::string & str = inbuf.erase(0,key_pos);
                   unsigned long v;
                   float useage_net;
-                  sscanf(str.c_str(),
+                  std::sscanf(str.c_str(),
                       "eth0:%lu %lu %lu %lu %lu %lu %lu %lu \
                         %lu %lu %lu %lu %lu %lu %lu %lu/n",
                         &v,&v,&v,&v,&v,&v,&v,&v,\
@@ -45,7 +44,7 @@ namespace byteps {
                   break;
                 }
               }	
-              return 	res;            
+              return res;            
         }
 
         BytePSScheduledQueue::BytePSScheduledQueue(QueueType type) {
