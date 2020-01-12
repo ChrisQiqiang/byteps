@@ -215,6 +215,9 @@ namespace byteps {
                   _mystack.pop();
                   _credits -= task->len;
                 }
+                else{
+                  return nullptr;
+                }
                 //  else if (!_dooropen) {
                 //     return nullptr;
                 // } else {
