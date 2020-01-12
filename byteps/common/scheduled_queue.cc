@@ -206,10 +206,6 @@ namespace byteps {
                     }
                 }
                 else if(_credits > task -> len){
-                  msit = findTask(_mystack.top());
-                  if (msit == _ms.end()) {
-                        return nullptr;
-                  }
                   task = *msit;
                   _ms.erase(msit);
                   _mystack.pop();
@@ -217,29 +213,6 @@ namespace byteps {
                 }
                 else{
                   return nullptr;
-                }
-                //  else if (!_dooropen) {
-                //     return nullptr;
-                // } else {
-                //     msit = findTask(_mystack.top());
-                //     if (msit == _ms.end()) {
-                //         return nullptr;
-                //     }
-                //     task = *msit;
-                //     _dooropen--;
-                //     _ms.erase(msit);
-                //     _mystack.pop();
-                // }
-                if (_mystack.empty() && _meetzero) {
-                    BPS_LOG(INFO) << "Clear.";
-                    _dequeue = 0;
-                    _pointer = 12;
-                    expected_priority = _grad_checkpoint[_pointer];
-                    _stagestart = 1;
-                    _meetzero = 0;
-                    _sizepointer = 0;
-                    // _credits = BytePSGlobal::GetPartitionBound() * credit_in_partition;
-                    // _dooropen = 11;
                 }
                 BPS_LOG(DEBUG) << "PUSH gettask: " << task -> tensor_name;
                 task->ready_event = nullptr;
@@ -318,25 +291,17 @@ namespace byteps {
             if ((_is_scheduled && _qt != PUSH) || (_qt == PUSH && tmp.find("gradient") != tmp.npos && _meetzero)) {
                 _credits += task -> len;
             }
-            // if (_qt == PUSH) {
-            //     if (_meetzero) {
-            //         if (_dooropen < 11)
-            //             _dooropen++;
-            //     }
-            // }
-            // TODO: update the PULL stage
-            // TODO: consider adding the TTE to another queue so that the PULL stage can be easier
-//            if (_qt == PULL) {
-//                if (_stagepullnum > 0) {
-//                    _stagepullnum--;
-//                    BPS_LOG(TRACE) << "PULL PROCESS FINISH: _stagepullnum value is:" << _stagepullnum;
-//                    if (!_stagepullnum) {
-//                        _exec_stage++;
-//                        _pulldoor = 0;
-//                        BPS_LOG(TRACE) << "STAGE PULL PROCESS FINISH: stage is:" << _exec_stage - 1;
-//                    }
-//                }
-//            }
+            if (_qt == PUSH && tmp.find("gradient") != tmp.npos && _mystack.empty() && _meetzero) {
+                  BPS_LOG(INFO) << "Clear." << "credits: "<< _credit;
+                  _dequeue = 0;
+                  _pointer = 12;
+                  expected_priority = _grad_checkpoint[_pointer];
+                  _stagestart = 1;
+                  _meetzero = 0;
+                  _sizepointer = 0;
+                  // _credits = BytePSGlobal::GetPartitionBound() * credit_in_partition;
+                  // _dooropen = 11;
+            }
             return;
         }
 
