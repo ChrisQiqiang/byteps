@@ -292,7 +292,7 @@ namespace byteps {
                 _credits += task -> len;
             }
             if (_qt == PUSH && tmp.find("gradient") != tmp.npos && _mystack.empty() && _meetzero) {
-                  BPS_LOG(INFO) << "Clear." << "credits: "<< _credit;
+                  BPS_LOG(INFO) << "Clear." << "  credits: "<< _credits;
                   _dequeue = 0;
                   _pointer = 12;
                   expected_priority = _grad_checkpoint[_pointer];
