@@ -223,8 +223,7 @@ namespace byteps {
                 }
                 // BPS_LOG(INFO) << "DEAD LOOP!" ;
             }
-            if (_qt == PUSH ) {
-                if(_ms.size() == 0)return nullptr;
+            if (_qt == PUSH && _ms.size() > 0) {
                 msit = findTask(_mystack.top());
                 if (msit == _ms.end()) {
                     return nullptr;
@@ -241,6 +240,7 @@ namespace byteps {
                     } else {
                         _dequeue = 0;
                         _pointer--;
+                        BPS_LOG(INFO) << "PUSH for each stage is over. dequeue = 0" << " _ms size:" <<_ms.size();
                         //update backward_exec here according to real-time bandwidth monitor.
                         // BytePSGlobal::pushsize[_sizepointer] = _mystack.top() + 1;
                         return nullptr;
