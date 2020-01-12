@@ -220,6 +220,10 @@ namespace byteps {
                         B = (get_tcp_bytes() - last_tcp_size) / (timenow - last_time);
                     dynamic_size = (int)(_backward_exec[_sizepointer++] * B);
                     _dequeue = 1;
+                    BPS_LOG(INFO) << "dynamic size update: sizepointer" << _sizepointer << "  Bandwidth:" << B \
+                              <<" now dynamic size is:" << dynamic_size;
+                    BPS_LOG(INFO) << "last time is:" << last_time << "  time now:" << timenow;
+                    BPS_LOG(INFO) << "last tcp size:" << last_tcp_size << " tcp size now:" << get_tcp_bytes();
                     last_time = timenow;
                     last_tcp_size = get_tcp_bytes();
                 }
