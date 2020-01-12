@@ -56,6 +56,7 @@ namespace byteps {
                     }
                     break;
                 case PUSH:
+                    _init_credits = _credits;
                     if(getenv("BANDWIDTH"))B = atoi(getenv("BANDWIDTH"));
                     if(getenv("Z_BATCH_SIZE")) batchsize = atoi(getenv("Z_BATCH_SIZE"));
                     for (int i = 0; i < 13; i++) 
@@ -292,13 +293,14 @@ namespace byteps {
                 _credits += task -> len;
             }
             if (_qt == PUSH && tmp.find("gradient") != tmp.npos && _mystack.empty() && _meetzero) {
-                  BPS_LOG(INFO) << "Clear." << "  credits: "<< _credits;
                   _dequeue = 0;
                   _pointer = 12;
                   expected_priority = _grad_checkpoint[_pointer];
                   _stagestart = 1;
                   _meetzero = 0;
                   _sizepointer = 0;
+                  _credits = _init_credits;
+                  BPS_LOG(INFO) << "Clear." << "  credits: "<< _credits;
                   // _credits = BytePSGlobal::GetPartitionBound() * credit_in_partition;
                   // _dooropen = 11;
             }

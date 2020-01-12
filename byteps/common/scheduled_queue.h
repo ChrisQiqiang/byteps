@@ -62,6 +62,7 @@ namespace byteps {
             std::stack<int> _mystackpull;
             std::mutex _mutex;
             uint64_t _credits;
+            uint64_t _init_credits;
             bool _is_scheduled;
             int _tensor_part[160] = {0};
             int _meetzero = 0;
@@ -83,6 +84,7 @@ namespace byteps {
             int dynamic_size;
             int _pushsize = 0;
             int _pullsize = 0;
+            
             int expected_priority = _grad_checkpoint[_pointer];
             QueueType _qt;
             ReadyTable *_rt;
