@@ -21,7 +21,7 @@
 namespace byteps {
     namespace common {
 
-        unsigned long get_tcp_bytes(){
+        unsigned long BytePSScheduledQueue::get_tcp_bytes(){
               unsigned long res;
           		std::ifstream fin("/proc/net/dev");                    
               while(!fin.eof())
