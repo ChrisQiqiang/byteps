@@ -223,7 +223,8 @@ namespace byteps {
                 }
                 // BPS_LOG(INFO) << "DEAD LOOP!" ;
             }
-            if (_qt == PUSH && _ms.size() > 0) {
+            if (_qt == PUSH ) {
+                if(_ms.size() == 0)return nullptr;
                 msit = findTask(_mystack.top());
                 if (msit == _ms.end()) {
                     return nullptr;
@@ -240,15 +241,12 @@ namespace byteps {
                     } else {
                         _dequeue = 0;
                         _pointer--;
-                        _stagestart = 1;
                         //update backward_exec here according to real-time bandwidth monitor.
-
                         // BytePSGlobal::pushsize[_sizepointer] = _mystack.top() + 1;
                         return nullptr;
                     }
                 }
                 else if(_credits > task -> len){
-                  task = *msit;
                   _ms.erase(msit);
                   _mystack.pop();
                   _credits -= task->len;
@@ -256,7 +254,8 @@ namespace byteps {
                 else{
                   return nullptr;
                 }
-                BPS_LOG(DEBUG) << "PUSH gettask: " << task -> tensor_name;
+                if(task -> priority > -15)
+                  BPS_LOG(INFO) << "PUSH gettask: " << task -> tensor_name;
                 task->ready_event = nullptr;
                 recorderTs(task);
                 return task;
@@ -337,7 +336,6 @@ namespace byteps {
                   _dequeue = 0;
                   _pointer = 12;
                   expected_priority = _grad_checkpoint[_pointer];
-                  _stagestart = 1;
                   _meetzero = 0;
                   _sizepointer = 0;
                   _credits = _init_credits;
