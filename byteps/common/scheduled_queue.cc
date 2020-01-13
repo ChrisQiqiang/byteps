@@ -209,7 +209,7 @@ namespace byteps {
                         //update B according to the last stage transfer information;
                         if(last_time != 0 && timenow != last_time)
                             B = (get_tcp_bytes() - last_tcp_size) / (timenow - last_time);
-                        B = B > 125000 ? B : 125000;
+                        B = B < 125000 ? B : 125000;
                         dynamic_size = (int)(_backward_exec[_sizepointer++] * B);
                         _dequeue = 1;
                         BPS_LOG(INFO) << "dynamic size update: sizepointer" << _sizepointer << "  Bandwidth:" << B \
