@@ -201,28 +201,32 @@ namespace byteps {
                       if (expected_priority == _grad_checkpoint[_pointer - 1]) {
                       //...............................................................................//
                         //initial variables for each stage.
-                        long timenow;
-                        unsigned long tcpsizenow;
-                        struct timeval tmptime;
-                        gettimeofday(&tmptime, NULL);
-                        timenow = ((long)tmptime.tv_sec)*1000+(long)tmptime.tv_usec/1000;
-                        //update B according to the last stage transfer information;
-                        if(last_time != 0 && timenow != last_time)
-                            B = (get_tcp_bytes() - last_tcp_size) / (timenow - last_time);
-                        B = B < 125000 ? B : 125000;
-                        int band_stage = (_sizepointer - 1 + 12) % 12;
-                        // if(!avg_bandwidth[band_stage])
-                        //   avg_bandwidth[band_stage] = B;
-                        // else
-                          avg_bandwidth[band_stage] = (avg_bandwidth[band_stage] + B) / 2; 
-                        // if(avg_bandwidth[_sizepointer] == 0)avg_bandwidth = 125000;
-                        dynamic_size = (int)(_backward_exec[_sizepointer] * avg_bandwidth[_sizepointer]);
-                        BPS_LOG(INFO) << "dynamic size update: sizepointer" << _sizepointer << "  Bandwidth:" << avg_bandwidth[_sizepointer] \
+                        if(_sizepointer == 0){
+                              long timenow;
+                              unsigned long tcpsizenow;
+                              struct timeval tmptime;
+                              gettimeofday(&tmptime, NULL);
+                              timenow = ((long)tmptime.tv_sec)*1000+(long)tmptime.tv_usec/1000;
+                              //update B according to the last stage transfer information;
+                              if(last_time != 0 && timenow != last_time){
+                                B = ((get_tcp_bytes() - last_tcp_size) / (timenow - last_time) + B) / 2;
+                                BPS_LOG(INFO) << "RESET  BANDWIDTH IS: " << B;
+                              }
+                                 
+                              last_time = timenow;
+                              last_tcp_size = get_tcp_bytes();
+                              // B = B < 125000 ? B : 125000;
+                        }
+                        // int band_stage = (_sizepointer - 1 + 12) % 12;
+                        // avg_bandwidth[band_stage] = (avg_bandwidth[band_stage] + B) / 2; 
+                        // dynamic_size = (int)(_backward_exec[_sizepointer] * avg_bandwidth[_sizepointer]);
+                        dynamic_size = (int)(_backward_exec[_sizepointer] * B);
+                        // BPS_LOG(INFO) << "dynamic size update: sizepointer" << _sizepointer << "  Bandwidth:" << avg_bandwidth[_sizepointer] \
                                   <<" now dynamic size is:" << dynamic_size <<" time pass:" << timenow - last_time;
                         //BPS_LOG(INFO) << "last time is:" << last_time << "  time now:" << timenow;
                         //BPS_LOG(INFO) << "last tcp size:" << last_tcp_size << " tcp size now:" << get_tcp_bytes();
-                        last_time = timenow;
-                        last_tcp_size = get_tcp_bytes();
+                        // last_time = timenow;
+                        // last_tcp_size = get_tcp_bytes();
                         _sizepointer++;
                         _dequeue = 1;
                         return nullptr;
