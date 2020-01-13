@@ -201,20 +201,21 @@ namespace byteps {
                       if (expected_priority == _grad_checkpoint[_pointer - 1]) {
                       //...............................................................................//
                         //initial variables for each stage.
-                        if(_sizepointer == 0){
+                        if(_sizepointer == 0 || _sizepointer == 11){
                               long timenow;
                               unsigned long tcpsizenow;
                               struct timeval tmptime;
                               gettimeofday(&tmptime, NULL);
                               timenow = ((long)tmptime.tv_sec)*1000+(long)tmptime.tv_usec/1000;
                               //update B according to the last stage transfer information;
-                              if(last_time != 0 && timenow != last_time){
+                              if(_sizepointer == 0 && last_time != 0 && timenow != last_time){
                                 B = ((get_tcp_bytes() - last_tcp_size) / (timenow - last_time) + B) / 2;
                                 BPS_LOG(INFO) << "RESET  BANDWIDTH IS: " << B;
                               }
-                                 
-                              last_time = timenow;
-                              last_tcp_size = get_tcp_bytes();
+                              if(_sizepointer == 11){
+                                last_time = timenow;
+                                last_tcp_size = get_tcp_bytes();
+                              }
                               // B = B < 125000 ? B : 125000;
                         }
                         // int band_stage = (_sizepointer - 1 + 12) % 12;
