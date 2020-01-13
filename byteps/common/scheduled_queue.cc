@@ -211,11 +211,11 @@ namespace byteps {
                             B = (get_tcp_bytes() - last_tcp_size) / (timenow - last_time);
                         B = B < 125000 ? B : 125000;
                         int band_stage = (_sizepointer - 1 + 12) % 12;
-                        if(!avg_bandwidth[band_stage])
-                          avg_bandwidth[band_stage] = B;
-                        else
-                          avg_bandwidth[band_stage] = (avg_bandwidth[_sizepointer] + B) / 2; 
-
+                        // if(!avg_bandwidth[band_stage])
+                        //   avg_bandwidth[band_stage] = B;
+                        // else
+                          avg_bandwidth[band_stage] = (avg_bandwidth[band_stage] + B) / 2; 
+                        // if(avg_bandwidth[_sizepointer] == 0)avg_bandwidth = 125000;
                         dynamic_size = (int)(_backward_exec[_sizepointer] * avg_bandwidth[_sizepointer]);
                         BPS_LOG(INFO) << "dynamic size update: sizepointer" << _sizepointer << "  Bandwidth:" << avg_bandwidth[_sizepointer] \
                                   <<" now dynamic size is:" << dynamic_size <<" time pass:" << timenow - last_time;
