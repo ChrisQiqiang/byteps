@@ -106,6 +106,7 @@ namespace byteps {
             long last_time = 0;
             unsigned long last_tcp_size;
             double B = 125000 ;
+            double avg_bandwidth[13] = {125000};
 
         };
     }  // namespace common
