@@ -503,9 +503,13 @@ bool RunPushLoopOnce() {
         BPS_LOG(INFO) << "PUSH delay: " << "push_ready_first is:" << push_ready_first << "pull_ready_first is:" << pull_ready_first;
     flag = false;
   }
+  if(!flag){
+    std::this_thread::sleep_for(std::chrono::nanoseconds(1000));
+    return true;
+  }
   //means pull should be the prior one, do not push now.  all priority is negative.
   auto task = q->getTask();
-  if (task && flag) {
+  if (task) {
     BPS_CHECK(BytePSGlobal::IsRootDevice())
         << "only root device should enter PUSH loop";
     BPS_LOG(INFO) << "PUSH : priority" << task -> priority;
@@ -555,9 +559,12 @@ bool RunPullLoopOnce() {
     if(output)
       BPS_LOG(INFO) << "PULL delay: " << "push_ready_first is:" << push_ready_first << "pull_ready_first is:" << pull_ready_first;
   }
-  
+  if(!flag){
+    std::this_thread::sleep_for(std::chrono::nanoseconds(1000));
+    return true;
+  }
   auto task = q->getTask();
-  if (task && flag) {
+  if (task) {
     
     BPS_CHECK(BytePSGlobal::IsRootDevice())
         << "only root device should enter PULL loop";
