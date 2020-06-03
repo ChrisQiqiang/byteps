@@ -5,7 +5,7 @@ ARG http_proxy
 
 ARG BYTEPS_BASE_PATH=/usr/local
 ARG BYTEPS_PATH=$BYTEPS_BASE_PATH/byteps
-ARG BYTEPS_GIT_LINK=https://github.com/bytedance/byteps
+ARG BYTEPS_GIT_LINK=https://github.com/chrisqiqiang/byteps
 ARG BYTEPS_BRANCH=master
 
 ARG DEBIAN_FRONTEND=noninteractive
@@ -50,7 +50,7 @@ RUN if [ "$FRAMEWORK" = "tensorflow" ]; then \
     fi
 
 ENV LD_LIBRARY_PATH /usr/local/cuda/lib64/stubs:$LD_LIBRARY_PATH
-
+ENV myversion=1
 RUN cd $BYTEPS_BASE_PATH &&\
     git clone --recursive -b $BYTEPS_BRANCH $BYTEPS_GIT_LINK &&\
     cd $BYTEPS_PATH &&\
