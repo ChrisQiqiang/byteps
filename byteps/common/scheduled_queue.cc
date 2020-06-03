@@ -213,7 +213,7 @@ int BytePSScheduledQueue::get_min_priority(){
     return -1;
   else{
     auto first = _sq.begin();
-    return *first -> priority;
+    return (*first) -> priority;
   }
 }
 
