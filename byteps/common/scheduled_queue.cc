@@ -22,7 +22,7 @@ namespace byteps {
 namespace common {
 
 BytePSScheduledQueue::BytePSScheduledQueue(QueueType type) {
-  if (type == REDUCE && BytePSGlobal::GetNccl()->IsSignalRoot()) {
+  if ((type == REDUCE && BytePSGlobal::GetNccl()->IsSignalRoot()) || type == PUSH || type == PULL)  {
     _is_scheduled = true;
   } else {
     _is_scheduled = false;
@@ -39,8 +39,8 @@ BytePSScheduledQueue::BytePSScheduledQueue(QueueType type) {
   _credits = _is_scheduled
               ? BytePSGlobal::GetPartitionBound() * credit_in_partition
               : 34359738368;  // 32GB, basically disabling credit control
-              
-  _is_scheduled = (_is_scheduled || _qt == PUSH || _qt == PULL)
+
+  // _is_scheduled = (_is_scheduled || _qt == PUSH || _qt == PULL)
   _rt = nullptr;
 
   switch (_qt) {
