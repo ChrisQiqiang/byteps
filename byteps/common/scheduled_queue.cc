@@ -210,7 +210,7 @@ void BytePSScheduledQueue::reportFinish(int size) {
 
 int BytePSScheduledQueue::get_min_priority(){
   if(!_sq.size())
-    return -1;
+    return 1;
   else{
     auto first = _sq.begin();
     return (*first) -> priority;
