@@ -496,14 +496,16 @@ bool RunPushLoopOnce() {
   int push_ready_first = q -> get_min_priority();
   int pull_ready_first = coord_q -> get_min_priority();
   bool flag = true;
-  if( push_ready_first != -1 && pull_ready_first != -1 && pull_ready_first < push_ready_first)
-  //means pull should be the prior one, do not push now.
+  if( push_ready_first != -1 && pull_ready_first != -1 && pull_ready_first < push_ready_first){
+    BPS_LOG(INFO) << << "PUSH delay: " << "push_ready_first is:" << push_ready_first << "pull_ready_first is:" << pull_ready_first;
     flag = false;
+  }
+  //means pull should be the prior one, do not push now. 
   auto task = q->getTask();
   if (task && flag) {
     BPS_CHECK(BytePSGlobal::IsRootDevice())
         << "only root device should enter PUSH loop";
-
+    BPS_LOG(INFO) << "PUSH : priority" << task -> priority;
     if (BytePSGlobal::IsDistributed()) {
       auto offset = task->offset;
       auto len = task->len;
@@ -542,13 +544,18 @@ bool RunPullLoopOnce() {
   int push_ready_first = q -> get_min_priority();
   int pull_ready_first = coord_q -> get_min_priority();
   bool flag = true;
-  if( push_ready_first != -1 && pull_ready_first != -1 && push_ready_first < pull_ready_first)
-  //means push should be the prior one, do not pull now.
+  if( push_ready_first != -1 && pull_ready_first != -1 && push_ready_first < pull_ready_first){
+    //means push should be the prior one, do not pull now.
     flag = false;
+    BPS_LOG(INFO) << "PULL delay: " << "push_ready_first is:" << push_ready_first << "pull_ready_first is:" << pull_ready_first;
+  }
+  
   auto task = q->getTask();
   if (task && flag) {
+    
     BPS_CHECK(BytePSGlobal::IsRootDevice())
         << "only root device should enter PULL loop";
+    BPS_LOG(INFO) << "PULL : priority" << task -> priority;
     // TODO: allow merging
     auto offset = task->offset;
     auto len = task->len;
