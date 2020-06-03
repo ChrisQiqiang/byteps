@@ -35,11 +35,12 @@ BytePSScheduledQueue::BytePSScheduledQueue(QueueType type) {
   if (!credit_in_partition) { // disable scheduling by default
     _is_scheduled = false;
   }
-
   _qt = type;
   _credits = _is_scheduled
               ? BytePSGlobal::GetPartitionBound() * credit_in_partition
               : 34359738368;  // 32GB, basically disabling credit control
+              
+  _is_scheduled = (_is_scheduled || _qt == PUSH || _qt == PULL)
   _rt = nullptr;
 
   switch (_qt) {
@@ -84,7 +85,7 @@ BytePSScheduledQueue::BytePSScheduledQueue(QueueType type) {
 void BytePSScheduledQueue::addTask(std::shared_ptr<TensorTableEntry> entry) {
   std::lock_guard<std::mutex> lock(_mutex);
   _sq.push_back(entry);
-  if (_is_scheduled || _qt == PUSH || _qt == PULL) {
+  if (_is_scheduled) {
     // TODO: below can be optimized to O(n) using insertion sort
     std::sort(
         _sq.begin(), _sq.end(),
