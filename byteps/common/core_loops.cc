@@ -29,7 +29,7 @@ void FinishOrProceed(std::shared_ptr<TensorTableEntry> task) {
   BPS_CHECK_GE(queue_list.size(), 1);
   auto this_op = queue_list[0];
   auto q = BytePSGlobal::GetScheduledQueue(this_op);
-  q->reportFinish(task);
+  q->reportFinish(task->len);
   if (BytePSGlobal::IsTensorSampled(task->key)) {
     // We only support sampling
     BPS_CHECK(task->tensor->dtype() == common::BYTEPS_FLOAT32);
@@ -80,7 +80,7 @@ void FinishOrProceed(std::shared_ptr<TensorTableEntry> task) {
                     << " tensor: " << task->tensor_name
                     << " task->key:" << task->key
                     << " type:" << this_op;
-                            
+
     task->context->part_comm_time[task->key][this_op].back()->dur = (long long)(us.count()) - _ts;
   }
 
@@ -102,7 +102,7 @@ void FinishOrProceed(std::shared_ptr<TensorTableEntry> task) {
       BPS_LOG(TRACE) << "Rank=" << BytePSGlobal::GetRank()
                      << " finish processing tensor: " << task->tensor_name;
       task->callback(Status::OK());
-      //* Add for profiling communication events     
+      //* Add for profiling communication events
       if (task->context->profile_flag) {
         BPS_CHECK(task->context->comm_time.back()->dur == 0)
                     << " tensor: " << task->tensor_name
@@ -153,6 +153,11 @@ bool RunCoordinateLoopOnce(QueueType this_op) {
         comm = BytePSGlobal::GetBasicComm();
         break;
       }
+      // case COORDINATE_PULL:{
+      //   sig = PULL_READY;
+      //   comm = BytePSGlobal::GetBasicComm();
+      //   break;
+      // }
       default:
         BPS_CHECK(0) << "unsupported op: " << this_op;
     }
@@ -168,7 +173,7 @@ bool RunCoordinateLoopOnce(QueueType this_op) {
                    << "Signal=" << sig << ", rank=" << rank << ", key=" << key;
 
   } else {
-    std::this_thread::sleep_for(std::chrono::nanoseconds(100));
+    std::this_thread::sleep_for(std::chrono::nanoseconds(1000));
   }
   return true;
 }
@@ -297,7 +302,7 @@ bool RunRootNcclLoopOnce() {
     BytePSGlobal::GetNccl()->EnqueueGroup(nccl_entry);
   } else {
     NCCLCHECK(ncclGroupEnd());
-    std::this_thread::sleep_for(std::chrono::nanoseconds(100));
+    std::this_thread::sleep_for(std::chrono::nanoseconds(1000));
   }
 
   return true;
@@ -357,7 +362,7 @@ bool RunSyncNcclOnce() {
     BPS_LOG(TRACE) << "Finished NCCL Group size=" << nccl_entry->tasks.size()
                    << " rank=" << BytePSGlobal::GetLocalRank();
   } else {
-    std::this_thread::sleep_for(std::chrono::nanoseconds(100));
+    std::this_thread::sleep_for(std::chrono::nanoseconds(1000));
   }
   return true;
 }
@@ -425,7 +430,7 @@ bool RunCopyDevice2HostLoopOnce() {
 
     FinishOrProceed(task);
   } else {
-    std::this_thread::sleep_for(std::chrono::nanoseconds(100));
+    std::this_thread::sleep_for(std::chrono::nanoseconds(1000));
   }
   return true;
 }
@@ -478,16 +483,24 @@ bool RunPcieReduceLoopOnce() {
 
     FinishOrProceed(task);
   } else {
-    std::this_thread::sleep_for(std::chrono::nanoseconds(100));
+    std::this_thread::sleep_for(std::chrono::nanoseconds(1000));
   }
   return true;
 }
 
 bool RunPushLoopOnce() {
   QueueType this_op = PUSH;
+  QueueType coord_op = PULL;
   auto q = BytePSGlobal::GetScheduledQueue(this_op);
+  auto coord_q = BytePSGlobal::GetScheduledQueue(coord_op);
+  int push_ready_first = q -> get_min_priority();
+  int pull_ready_first = coord_q -> get_min_priority();
+  bool flag = true;
+  if( push_ready_first != -1 && pull_ready_first != -1 && pull_ready_first < push_ready_first)
+  //means pull should be the prior one, do not push now.
+    flag = false;
   auto task = q->getTask();
-  if (task) {
+  if (task && flag) {
     BPS_CHECK(BytePSGlobal::IsRootDevice())
         << "only root device should enter PUSH loop";
 
@@ -516,16 +529,24 @@ bool RunPushLoopOnce() {
       FinishOrProceed(task);
     }
   } else {
-    std::this_thread::sleep_for(std::chrono::nanoseconds(100));
+    std::this_thread::sleep_for(std::chrono::nanoseconds(1000));
   }
   return true;
 }
 
 bool RunPullLoopOnce() {
   QueueType this_op = PULL;
+  QueueType coord_op = PUSH;
   auto q = BytePSGlobal::GetScheduledQueue(this_op);
+  auto coord_q = BytePSGlobal::GetScheduledQueue(coord_op);
+  int push_ready_first = q -> get_min_priority();
+  int pull_ready_first = coord_q -> get_min_priority();
+  bool flag = true;
+  if( push_ready_first != -1 && pull_ready_first != -1 && push_ready_first < pull_ready_first)
+  //means push should be the prior one, do not pull now.
+    flag = false;
   auto task = q->getTask();
-  if (task) {
+  if (task && flag) {
     BPS_CHECK(BytePSGlobal::IsRootDevice())
         << "only root device should enter PULL loop";
     // TODO: allow merging
@@ -552,7 +573,7 @@ bool RunPullLoopOnce() {
                                    FinishOrProceed(task);
                                  });
   } else {
-    std::this_thread::sleep_for(std::chrono::nanoseconds(100));
+    std::this_thread::sleep_for(std::chrono::nanoseconds(1000));
   }
   return true;
 }
@@ -624,7 +645,7 @@ bool RunRootCopyHost2DeviceLoopOnce() {
 
     FinishOrProceed(task);
   } else {
-    std::this_thread::sleep_for(std::chrono::nanoseconds(100));
+    std::this_thread::sleep_for(std::chrono::nanoseconds(1000));
   }
   return true;
 }
@@ -658,7 +679,7 @@ bool RunNonRootCopyHost2DeviceLoopOnce() {
     CopyHost2Device(task);
     FinishOrProceed(task);
   } else {
-    std::this_thread::sleep_for(std::chrono::nanoseconds(100));
+    std::this_thread::sleep_for(std::chrono::nanoseconds(1000));
   }
   return true;
 }

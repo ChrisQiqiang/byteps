@@ -18,11 +18,13 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+from contextlib import contextmanager
+
 from byteps.torch.compression import Compression
 from byteps.torch.ops import push_pull_async_inplace as byteps_push_pull
 from byteps.torch.ops import push_pull
 from byteps.torch.ops import poll, synchronize, declare
-from byteps.torch.ops import init, shutdown
+from byteps.torch.ops import init, shutdown, suspend, resume
 from byteps.torch.ops import size, local_size, rank, local_rank
 
 import os
@@ -84,6 +86,7 @@ class _DistributedOptimizer(torch.optim.Optimizer):
         self._handles = {}
         self._grad_accs = []
         self._requires_update = set()
+        self._should_sync = True
         if size() > 1:
             self._register_hooks()
 
@@ -170,6 +173,16 @@ class _DistributedOptimizer(torch.optim.Optimizer):
                 p.grad.set_(self._compression.decompress(output, ctx))
         self._handles.clear()
 
+    @contextmanager
+    def skip_synchronize(self):
+        if self._enable_async:
+            raise AssertionError("skip_synchronize cannot be used in async training")
+        self._should_sync = False
+        try:
+            yield
+        finally:
+            self._should_sync = True
+
     def step(self, closure=None):
         if self._enable_async:
             old_weight_map = {}
@@ -178,7 +191,7 @@ class _DistributedOptimizer(torch.optim.Optimizer):
                 old_weight_map[p] = p.data.clone().detach()
             # update
             loss = super(self.__class__, self).step(closure)
-            
+
             for p, (h, _) in self._handles.items():
                 # get the diff for each weight (in-place)
                 p.data.sub_(old_weight_map.get(p))
@@ -195,7 +208,9 @@ class _DistributedOptimizer(torch.optim.Optimizer):
             self.synchronize()
             return loss
         else:
-            self.synchronize()
+            # skip sync if calling skip_synchronize
+            if self._should_sync:
+                self.synchronize()
             return super(self.__class__, self).step(closure)
 
 
@@ -268,7 +283,10 @@ def broadcast_parameters(params, root_rank):
         if rank() != root_rank:
             p.fill_(0)
         # Remember to disable averaging because we are doing broadcast
-        handle = byteps_push_pull(p, average=False, name="Parameter."+name)
+        if name:
+            handle = byteps_push_pull(p, average=False, name="Parameter."+name)
+        else:
+            handle = byteps_push_pull(p, average=False)
         synchronize(handle)
 
 
@@ -338,13 +356,13 @@ def broadcast_optimizer_state(optimizer, root_rank):
     # new unwrapped scalar value via a callback.
     def _create_callback(pid, name, t, p):
         def _from_tensor():
-            state_dict['state'][pid][name] = t(p.numpy()[0])
+            state_dict['state'][pid][name] = t(p.cpu().numpy()[0])
         return _from_tensor
 
     def _create_option_callback(index, option_key, option_tensor, dtypes):
         def _from_tensor():
             optimizer.param_groups[index][option_key] = _recursive_cast(
-                option_tensor.numpy()[0], dtypes)
+                option_tensor.cpu().numpy()[0], dtypes)
         return _from_tensor
 
     # Param groups are an ordered list, normally there is only one per model,
@@ -359,7 +377,7 @@ def broadcast_optimizer_state(optimizer, root_rank):
             # Options like the learning rate are scalar, and need to be wrapped in tensors
             key = '%s.%d' % (option_key, index)
             dtypes = _get_types(option_value)
-            option_tensor = torch.Tensor([option_value])
+            option_tensor = torch.Tensor([option_value]).cuda()
             callbacks[key] = _create_option_callback(index, option_key, option_tensor, dtypes)
             params.append((key, option_tensor))
 
@@ -377,7 +395,7 @@ def broadcast_optimizer_state(optimizer, root_rank):
                     # Wrap the scalar in a FloatTensor, and remember its type
                     # so we can cast it back after unwrapping
                     t = type(p)
-                    p = torch.Tensor([p])
+                    p = torch.Tensor([p]).cuda()
                     callbacks[key] = _create_callback(pid, name, t, p)
 
                 params.append((key, p))

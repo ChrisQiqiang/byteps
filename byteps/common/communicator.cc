@@ -78,6 +78,8 @@ void BytePSCommSocket::init(int* rank, int* size, int* local_rank,
 
   // we assume _local_size (i.e., # GPU) is consistent on all workers
   *rank = (*local_rank) + (*worker_id) * (*local_size);
+  // force setting global rank
+  *rank = getenv("BYTEPS_GLOBAL_RANK") ? atoi(getenv("BYTEPS_GLOBAL_RANK")) : *rank;
   *size = num_worker * (*local_size);
 
   _rank = *rank;
@@ -192,6 +194,9 @@ void BytePSCommSocket::startListenThread() {  // only root starts this in
       case PUSH_READY:
         BytePSGlobal::GetPushTable()->AddReadyCount(message.key);
         break;
+      // case PULL_READY:
+      //   BytePSGlobal::GetPullTable()->AddReadyCount(message.key);
+      //   break;
       default:
         BPS_CHECK(0) << "unsupported signal: " << message.signal;
     }
@@ -200,7 +205,7 @@ void BytePSCommSocket::startListenThread() {  // only root starts this in
                    << ", signal=" << message.signal << ", key=" << message.key
                    << ", myrank=" << _local_rank;
   }
-  BPS_LOG(DEBUG) << "listen thread joined" 
+  BPS_LOG(DEBUG) << "listen thread joined"
                  << " (rank=" << _local_rank << ")";
 }
 

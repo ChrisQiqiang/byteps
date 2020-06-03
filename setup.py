@@ -8,6 +8,7 @@ import io
 import os
 import sys
 import re
+import shutil
 from shutil import rmtree
 import textwrap
 import shlex
@@ -19,6 +20,8 @@ from distutils.errors import CompileError, DistutilsError, DistutilsPlatformErro
 from distutils import log as distutils_logger
 from distutils.version import LooseVersion
 import traceback
+
+import pre_setup
 
 server_lib = Extension('byteps.server.c_lib', [])
 tensorflow_lib = Extension('byteps.tensorflow.c_lib', [])
@@ -227,6 +230,13 @@ def get_link_flags(build_ext):
 
     raise DistutilsPlatformError(last_err)
 
+def has_rdma_header():
+    ret_code = subprocess.call(
+        "echo '#include <rdma/rdma_cma.h>' | cpp -H -o /dev/null 2>/dev/null", shell=True)
+    if ret_code != 0:
+        import warnings
+        warnings.warn("\n\n No RDMA header file detected. Will disable RDMA for compilation! \n\n")
+    return ret_code==0
 
 def get_common_options(build_ext):
     cpp_flags = get_cpp_flags(build_ext)
@@ -263,12 +273,13 @@ def get_common_options(build_ext):
 
     # RDMA and NUMA libs
     LIBRARIES += ['numa']
-    if int(os.environ.get('BYTEPS_USE_RDMA', 0)):
-        LIBRARIES += ['rdmacm', 'ibverbs']
+
+    # auto-detect rdma
+    if has_rdma_header():
+        LIBRARIES += ['rdmacm', 'ibverbs', 'rt']
 
     # ps-lite
     EXTRA_OBJECTS = ['3rdparty/ps-lite/build/libps.a',
-                     '3rdparty/ps-lite/deps/lib/libprotobuf-lite.a',
                      '3rdparty/ps-lite/deps/lib/libzmq.a']
 
     return dict(MACROS=MACROS,
@@ -284,7 +295,7 @@ def get_common_options(build_ext):
 def build_server(build_ext, options):
     server_lib.define_macros = options['MACROS']
     server_lib.include_dirs = options['INCLUDES']
-    server_lib.sources = ['byteps/server/server.cc', 
+    server_lib.sources = ['byteps/server/server.cc',
                           'byteps/common/cpu_reducer.cc',
                           'byteps/common/logging.cc']
     server_lib.extra_compile_args = options['COMPILE_FLAGS'] + \
@@ -292,8 +303,10 @@ def build_server(build_ext, options):
     server_lib.extra_link_args = options['LINK_FLAGS']
     server_lib.extra_objects = options['EXTRA_OBJECTS']
     server_lib.library_dirs = options['LIBRARY_DIRS']
-    if int(os.environ.get('BYTEPS_USE_RDMA', 0)):
-        server_lib.libraries = ['rdmacm', 'ibverbs']
+
+    # auto-detect rdma
+    if has_rdma_header():
+        server_lib.libraries = ['rdmacm', 'ibverbs', 'rt']
     else:
         server_lib.libraries = []
 
@@ -502,8 +515,12 @@ def get_mx_flags(build_ext, cpp_flags):
     mx_libs = get_mx_libs(build_ext, mx_lib_dirs, cpp_flags)
 
     compile_flags = []
+    has_mkldnn = is_mx_mkldnn()
     for include_dir in mx_include_dirs:
         compile_flags.append('-I%s' % include_dir)
+        if has_mkldnn:
+            mkldnn_include = os.path.join(include_dir, 'mkldnn')
+            compile_flags.append('-I%s' % mkldnn_include)
 
     link_flags = []
     for lib_dir in mx_lib_dirs:
@@ -609,10 +626,38 @@ def get_nccl_vals():
 
     return nccl_include_dirs, nccl_lib_dirs, nccl_libs
 
+def is_mx_mkldnn():
+    try:
+        from mxnet import runtime
+        features = runtime.Features()
+        return features.is_enabled('MKLDNN')
+    except Exception:
+        msg = 'INFO: Cannot detect if MKLDNN is enabled in MXNet. Please \
+            set MXNET_USE_MKLDNN=1 if MKLDNN is enabled in your MXNet build.'
+        if 'linux' not in sys.platform:
+            # MKLDNN is only enabled by default in MXNet Linux build. Return 
+            # False by default for non-linux build but still allow users to 
+            # enable it by using MXNET_USE_MKLDNN env variable. 
+            print(msg)
+            return os.environ.get('MXNET_USE_MKLDNN', '0') == '1'
+        else:
+            try:
+                import mxnet as mx
+                mx_libs = mx.libinfo.find_lib_path()
+                for mx_lib in mx_libs:
+                    output = subprocess.check_output(['readelf', '-d', mx_lib])
+                    if 'mkldnn' in str(output):
+                        return True
+                return False
+            except Exception:
+                print(msg)
+                return os.environ.get('MXNET_USE_MKLDNN', '0') == '1'
+
 
 def build_mx_extension(build_ext, options):
     # clear ROLE -- installation does not need this
     os.environ.pop("DMLC_ROLE", None)
+
     check_mx_version()
     mx_compile_flags, mx_link_flags = get_mx_flags(
         build_ext, options['COMPILE_FLAGS'])
@@ -638,6 +683,10 @@ def build_mx_extension(build_ext, options):
         mxnet_lib.define_macros += [('MSHADOW_USE_CUDA', '1')]
     else:
         mxnet_lib.define_macros += [('MSHADOW_USE_CUDA', '0')]
+    if is_mx_mkldnn():
+        mxnet_lib.define_macros += [('MXNET_USE_MKLDNN', '1')]
+    else:
+        mxnet_lib.define_macros += [('MXNET_USE_MKLDNN', '0')]  
     mxnet_lib.define_macros += [('MSHADOW_USE_MKL', '0')]
 
     # use MXNet's DMLC headers first instead of ps-lite's
@@ -719,8 +768,10 @@ def is_torch_cuda(build_ext, include_dirs, extra_compile_args):
 
 
 def build_torch_extension(build_ext, options, torch_version):
+    pytorch_compile_flags = ["-std=c++14" if flag == "-std=c++11" 
+                             else flag for flag in options['COMPILE_FLAGS']]
     have_cuda = is_torch_cuda(build_ext, include_dirs=options['INCLUDES'],
-                              extra_compile_args=options['COMPILE_FLAGS'])
+                              extra_compile_args=pytorch_compile_flags)
     if not have_cuda and check_macro(options['MACROS'], 'HAVE_CUDA'):
         raise DistutilsPlatformError(
             'byteps build with GPU support was requested, but this PyTorch '
@@ -758,7 +809,7 @@ def build_torch_extension(build_ext, options, torch_version):
                                                        'byteps/torch/cuda_util.cc',
                                                        'byteps/torch/adapter.cc',
                                                        'byteps/torch/handle_manager.cc'],
-                         extra_compile_args=options['COMPILE_FLAGS'],
+                         extra_compile_args=pytorch_compile_flags,
                          extra_link_args=options['LINK_FLAGS'],
                          extra_objects=options['EXTRA_OBJECTS'],
                          library_dirs=options['LIBRARY_DIRS'],
@@ -773,13 +824,55 @@ def build_torch_extension(build_ext, options, torch_version):
 # run the customize_compiler
 class custom_build_ext(build_ext):
     def build_extensions(self):
+        pre_setup.setup()
+
+        make_option = ""
+        # To resolve tf-gcc incompatibility
+        has_cxx_flag = False
+        glibcxx_flag = False
+        if not int(os.environ.get('BYTEPS_WITHOUT_TENSORFLOW', 0)):
+            try:
+                import tensorflow as tf
+                make_option += 'ADD_CFLAGS="'
+                for flag in tf.sysconfig.get_compile_flags():
+                    if 'D_GLIBCXX_USE_CXX11_ABI' in flag:
+                        has_cxx_flag = True
+                        glibcxx_flag = False if (flag[-1]=='0') else True
+                        make_option += flag + ' '
+                        break
+                make_option += '" '
+            except:
+                pass
+
+        # To resolve torch-gcc incompatibility
+        if not int(os.environ.get('BYTEPS_WITHOUT_PYTORCH', 0)):
+            try:
+                import torch
+                torch_flag = torch.compiled_with_cxx11_abi()
+                if has_cxx_flag:
+                    if glibcxx_flag != torch_flag:
+                        raise DistutilsError(
+                            '-D_GLIBCXX_USE_CXX11_ABI is not consistent between TensorFlow and PyTorch, '
+                            'consider install them separately.')
+                    else:
+                        pass
+                else:
+                    make_option += 'ADD_CFLAGS=-D_GLIBCXX_USE_CXX11_ABI=' + \
+                                    str(int(torch_flag)) + ' '
+                    has_cxx_flag = True
+                    glibcxx_flag = torch_flag
+            except:
+                pass
+
         if not os.path.exists("3rdparty/ps-lite/build/libps.a") or \
            not os.path.exists("3rdparty/ps-lite/deps/lib"):
-            make_option = ""
             if os.environ.get('CI', 'false') == 'false':
                 make_option += "-j "
-            if int(os.environ.get('BYTEPS_USE_RDMA', 0)):
+            if has_rdma_header():
                 make_option += "USE_RDMA=1 "
+
+            make_option += pre_setup.extra_make_option()
+
 
             make_process = subprocess.Popen('make ' + make_option,
                                             cwd='3rdparty/ps-lite',
@@ -793,8 +886,10 @@ class custom_build_ext(build_ext):
                                           'Exit code: {0}'.format(make_process.returncode))
 
         options = get_common_options(self)
-        built_plugins = []
+        if has_cxx_flag:
+            options['COMPILE_FLAGS'] += ['-D_GLIBCXX_USE_CXX11_ABI=' + str(int(glibcxx_flag))]
 
+        built_plugins = []
         try:
             build_server(self, options)
         except:
@@ -810,21 +905,10 @@ class custom_build_ext(build_ext):
             try:
                 build_tf_extension(self, options)
                 built_plugins.append(True)
+                print('INFO: Tensorflow extension is built successfully.')
             except:
                 if not int(os.environ.get('BYTEPS_WITH_TENSORFLOW', 0)):
                     print('INFO: Unable to build TensorFlow plugin, will skip it.\n\n'
-                          '%s' % traceback.format_exc())
-                    built_plugins.append(False)
-                else:
-                    raise
-        if not int(os.environ.get('BYTEPS_WITHOUT_MXNET', 0)):
-            try:
-                build_mx_extension(self, options)
-                built_plugins.append(True)
-                print('INFO: MXNet extension is built successfully.')
-            except:
-                if not int(os.environ.get('BYTEPS_WITH_MXNET', 0)):
-                    print('INFO: Unable to build MXNet plugin, will skip it.\n\n'
                           '%s' % traceback.format_exc())
                     built_plugins.append(False)
                 else:
@@ -842,6 +926,25 @@ class custom_build_ext(build_ext):
                     built_plugins.append(False)
                 else:
                     raise
+        if not int(os.environ.get('BYTEPS_WITHOUT_MXNET', 0)):
+            # fix "libcuda.so.1 not found" issue
+            cuda_home = os.environ.get('BYTEPS_CUDA_HOME', '/usr/local/cuda')
+            cuda_stub_path = cuda_home + '/lib64/stubs'
+            ln_command = "cd " + cuda_stub_path + "; ln -sf libcuda.so libcuda.so.1"
+            os.system(ln_command)
+            try:
+                build_mx_extension(self, options)
+                built_plugins.append(True)
+                print('INFO: MXNet extension is built successfully.')
+            except:
+                if not int(os.environ.get('BYTEPS_WITH_MXNET', 0)):
+                    print('INFO: Unable to build MXNet plugin, will skip it.\n\n'
+                          '%s' % traceback.format_exc())
+                    built_plugins.append(False)
+                else:
+                    raise
+            finally:
+                os.system("rm -rf " + cuda_stub_path + "/libcuda.so.1")
 
         if not built_plugins:
             print('INFO: Only server module is built.')
@@ -853,6 +956,12 @@ class custom_build_ext(build_ext):
 
 
 # Where the magic happens:
+
+if os.path.exists('launcher/launch.py'):
+    if not os.path.exists('bin'):
+        os.mkdir('bin')
+    shutil.copyfile('launcher/launch.py', 'bin/bpslaunch')
+
 setup(
     name=NAME,
     version=about['__version__'],
@@ -867,16 +976,17 @@ setup(
     install_requires=REQUIRED,
     extras_require=EXTRAS,
     include_package_data=True,
-    license='MIT',
+    license='Apache',
     classifiers=[
         # Trove classifiers
         # Full list: https://pypi.python.org/pypi?%3Aaction=list_classifiers
-        'License :: OSI Approved :: MIT License',
+        'License :: OSI Approved :: Apache Software License',
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: Implementation :: CPython',
-        'Programming Language :: Python :: Implementation :: PyPy'
+        'Programming Language :: Python :: Implementation :: PyPy',
+        'Operating System :: POSIX :: Linux'
     ],
     ext_modules=[server_lib, tensorflow_lib, mxnet_lib, pytorch_lib],
     # $ setup.py publish support.
@@ -889,4 +999,5 @@ setup(
     # which is undesirable.  Luckily, `install` action will install cffi before executing build,
     # so it's only necessary for `build*` or `bdist*` actions.
     setup_requires=[],
+    scripts=['bin/bpslaunch']
 )

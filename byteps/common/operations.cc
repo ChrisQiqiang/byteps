@@ -29,6 +29,11 @@ namespace common {
 extern "C" {
 
 void byteps_init() {
+  byteps_lazy_init();
+  BytePSGlobal::GetOrInitPS();
+}
+
+void byteps_lazy_init() {
   BytePSGlobal::Init();
 
   // The order of func does not matter
@@ -78,6 +83,29 @@ void byteps_init() {
 void byteps_shutdown() {
   BytePSGlobal::Shutdown();
   BPS_LOG(DEBUG) << "BytePS has been completely shutdown now";
+  return;
+}
+
+void byteps_resume(int num_workers, int num_servers) {
+  // set ps, worker numbers
+  BPS_LOG(DEBUG) << "Resume worker number: " << num_workers << "DMLC_NUM_WORKER: " << getenv("DMLC_NUM_WORKER");
+  BPS_LOG(DEBUG) << "Resume server number: " << num_workers << "DMLC_NUM_SERVER: " << getenv("DMLC_NUM_SERVER");
+  BPS_LOG(DEBUG) << "Start resuming BytePS";
+
+  BytePSGlobal::SetResumingFlag(true);
+  byteps_init();
+
+  // redeclare tensor with original order
+  BytePSGlobal::ReDeclareTensor();
+  BytePSGlobal::SetResumingFlag(false);
+
+  BPS_LOG(INFO) << "BytePS has been resumed now";
+}
+
+void byteps_suspend() {
+  BPS_LOG(DEBUG) << "Start suspending BytePS";
+  BytePSGlobal::Shutdown();
+  BPS_LOG(INFO) << "BytePS has been suspended now";
   return;
 }
 
@@ -158,6 +186,15 @@ Status EnqueueTensor(BPSContext &context, std::shared_ptr<Tensor> input,
   e->priority = priority;
   e->version = version;
   e->callback = callback;
+
+  if (device == CPU_DEVICE_ID) {
+    cudaError_t err = cudaHostRegister(const_cast<void*>(input->data()), input->size(), cudaHostRegisterMapped);
+    if (err == cudaSuccess) {
+      BPS_LOG(DEBUG) << name << " cpu address has changed, so it is pinned again.";
+    }
+    CUDA_CALL(cudaHostGetDevicePointer(&(context.gpu_ptr), const_cast<void*>(input->data()), 0));
+  }
+
   e->cpubuff = context.cpubuff;
   e->gpu_ptr = context.gpu_ptr;
   e->pcie_cpubuff = context.pcie_cpubuff;
@@ -263,7 +300,11 @@ void InitTensor(BPSContext &context, size_t size, int dtype, void *cpubuff) {
   // We need to register with CUDA so that NCCL can work on it
   if (cpubuff) {
     BPS_LOG(DEBUG) << name << " is already on cpu, len=" << size;
-    CUDA_CALL(cudaHostRegister(cpubuff, size, cudaHostRegisterMapped));
+    cudaError_t e = cudaHostRegister(cpubuff, size, cudaHostRegisterMapped);
+    if (e != cudaSuccess) {
+      BPS_LOG(INFO) << cudaGetErrorString(e) 
+                    << " (You may ignore this if your program continues)";
+    }
     CUDA_CALL(cudaHostGetDevicePointer(&(context.gpu_ptr), cpubuff, 0));
   }
 

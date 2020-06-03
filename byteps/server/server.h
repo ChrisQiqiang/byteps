@@ -19,6 +19,8 @@
 #include <chrono>
 #include <cmath>
 #include <cstdlib>
+#include <set>
+#include <unistd.h>
 #include "ps/ps.h"
 #include "../common/cpu_reducer.h"
 
@@ -70,7 +72,7 @@ struct BytePSEngineMessage {
   void* src;
   size_t len;
   BytePSEngineOperation ops;
-  ps::KVPairs<char> sarray; // to temporarily hold it and auto release 
+  ps::KVPairs<char> sarray; // to temporarily hold it and auto release
   ps::KVMeta req_meta;
 };
 
@@ -90,26 +92,30 @@ static DataHandleType DepairDataHandleType(int cmd) {
 
 KVServer<SERVER_DATA_TYPE>* byteps_server_;
 byteps::common::CpuReducer* bps_reducer_;
-std::unordered_map<SERVER_KEY_TYPE, KVPairs<SERVER_DATA_TYPE> > mem_map_;
+
 std::mutex pullresp_mu_;
 std::unordered_map<uint64_t, ps::KVPairs<char> > push_response_map_;
 std::unordered_map<uint64_t, ps::KVPairs<char> > pull_response_map_;
 
-// push & pull flag 
-std::vector<std::mutex> flag_mu_; 
+// push & pull flag
+std::vector<std::mutex> flag_mu_;
 std::vector<std::unordered_map<uint64_t, bool> > is_push_finished_;
 std::vector<std::unordered_map<uint64_t, std::vector<ps::KVMeta> > > q_pull_reqmeta_;
+std::vector<std::unordered_map<uint64_t, std::set<int> > > seen_sender_;
 std::vector<std::unordered_map<uint64_t, size_t> > pull_cnt_;
 
-// address map 
+// byteps handler
 std::mutex handle_mu_;
-std::unordered_map<uint64_t, BytePSArray> store_; 
 std::unordered_map<uint64_t, UpdateBuf> update_buf_;
+
+// address map
+std::mutex store_mu_;
+std::unordered_map<uint64_t, BytePSArray> store_;
 
 // hash function
 std::mutex hash_mu_;
 std::unordered_map<uint64_t, size_t> hash_cache_;
-std::vector<uint64_t> acc_load_; // accumulated tensor size for an engine thread 
+std::vector<uint64_t> acc_load_; // accumulated tensor size for an engine thread
 
 // global knob
 uint64_t timestamp_ = 0;
@@ -124,6 +130,8 @@ volatile bool enable_schedule_ = false;
 uint64_t debug_key_;
 std::mutex debug_mu_;
 
+int DivUp(int x, int y) { return (x + y - 1) / y; }
+int RoundUp(int x, int y) { return DivUp(x, y) * y; }
 
 uint64_t DecodeKey(ps::Key key) {
   auto kr = ps::Postoffice::Get()->GetServerKeyRanges()[ps::MyRank()];
@@ -159,6 +167,17 @@ size_t GetThreadID(uint64_t key, size_t len) {
   acc_load_[min_index] += len;
   hash_cache_[key] = min_index;
   return hash_cache_[key];
+}
+
+void PageAlignedMalloc(void** ptr, size_t size) {
+  size_t page_size = sysconf(_SC_PAGESIZE);
+  void* p;
+  int size_aligned = RoundUp(size, page_size);
+  int ret = posix_memalign(&p, page_size, size_aligned);
+  CHECK_EQ(ret, 0) << "posix_memalign error: " << strerror(ret);
+  CHECK(p);
+  memset(p, 0, size);
+  *ptr = p;
 }
 
 extern "C" void byteps_server();

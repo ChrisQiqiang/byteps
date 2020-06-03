@@ -34,6 +34,7 @@ class ReadyTable {
   int AddReadyCount(uint64_t key);
   void ClearReadyCount(uint64_t key);
 
+
  private:
   // (key, ready_signal_count) pair, only valid for root device
   std::unordered_map<uint64_t, int> _ready_table;

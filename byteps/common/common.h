@@ -96,7 +96,7 @@ const int QueueNum =
 
 const std::vector<std::string> LogStrings = {
     "COORDINATE_REDUCE",    "REDUCE",   "COPYD2H", "PCIE_REDUCE",
-    "COORDINATE_PUSH",      "PUSH",     "PULL",    "COPYH2D",
+    "COORDINATE_PUSH",     "PUSH",    "PULL",    "COPYH2D",
     "COORDINATE_BROADCAST", "BROADCAST"};
 
 class Status {
