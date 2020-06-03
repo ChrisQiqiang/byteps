@@ -212,8 +212,8 @@ int BytePSScheduledQueue::get_min_priority(){
   if(!_sq.size())
     return -1;
   else{
-    std::shared_ptr<TensorTableEntry> first = _sq.begin();
-    return first -> priority;
+    auto first = _sq.begin();
+    return *first -> priority;
   }
 }
 
