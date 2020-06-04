@@ -212,10 +212,10 @@ int BytePSScheduledQueue::get_min_priority(){
     std::lock_guard<std::mutex> lock(_mutex);
     if(!_transfer_window.empty() && _sq.size()){
       auto first = _sq.begin();
-      return max(*(_transfer_window.begin()), (*first) -> priority) 
+      return std::max(*(_transfer_window.begin()), (*first) -> priority) ;
     }
     else if(!_transfer_window.empty()){
-      return *(_transfer_window.begin();
+      return *(_transfer_window.begin());
     }
     else if(_sq.size()){
       auto first = _sq.begin();
