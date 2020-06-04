@@ -224,7 +224,6 @@ int BytePSScheduledQueue::get_min_priority(){
     else
       return 1; 
   }
-}
 
 }  // namespace common
 }  // namespace byteps
