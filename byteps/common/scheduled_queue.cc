@@ -209,6 +209,7 @@ void BytePSScheduledQueue::reportFinish(int size) {
 }
 
 int BytePSScheduledQueue::get_min_priority(){
+  std::lock_guard<std::mutex> lock(_mutex);
   if(!_sq.size())
     return 1;
   else{
