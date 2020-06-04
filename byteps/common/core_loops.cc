@@ -493,22 +493,24 @@ bool RunPushLoopOnce() {
   QueueType coord_op = PULL;
   auto q = BytePSGlobal::GetScheduledQueue(this_op);
   auto coord_q = BytePSGlobal::GetScheduledQueue(coord_op);
-  int push_ready_first = q -> get_min_priority();
-  int pull_ready_first = coord_q -> get_min_priority();
-  bool flag = true;
-  auto output_push_pull_info = getenv("IGNORE_CHRIS_INFO");
-  int output =  output_push_pull_info ? 0 : 1;
-  if( push_ready_first != 1 && pull_ready_first != 1 && pull_ready_first > push_ready_first){
+  if(coord_q){
+        int push_ready_first = q -> get_min_priority();
+        int pull_ready_first = coord_q -> get_min_priority();
+        bool flag = true;
+        auto output_push_pull_info = getenv("IGNORE_CHRIS_INFO");
+        int output =  output_push_pull_info ? 0 : 1;
+        if( push_ready_first != 1 && pull_ready_first != 1 && pull_ready_first > push_ready_first){
+          if(output)
+              BPS_LOG(INFO) << "PUSH delay: " << "push_ready_first is:" << push_ready_first << "pull_ready_first is:" << pull_ready_first;
+          flag = false;
+        }
+        if(!flag){
+          std::this_thread::sleep_for(std::chrono::nanoseconds(1000));
+          return true;
+        }
+        //means pull should be the prior one, do not push now.  all priority is negative.
+  }
 
-    if(output)
-        BPS_LOG(INFO) << "PUSH delay: " << "push_ready_first is:" << push_ready_first << "pull_ready_first is:" << pull_ready_first;
-    flag = false;
-  }
-  if(!flag){
-    std::this_thread::sleep_for(std::chrono::nanoseconds(1000));
-    return true;
-  }
-  //means pull should be the prior one, do not push now.  all priority is negative.
   auto task = q->getTask();
   if (task) {
     BPS_CHECK(BytePSGlobal::IsRootDevice())
@@ -550,20 +552,22 @@ bool RunPullLoopOnce() {
   QueueType coord_op = PUSH;
   auto q = BytePSGlobal::GetScheduledQueue(this_op);
   auto coord_q = BytePSGlobal::GetScheduledQueue(coord_op);
-  int pull_ready_first = q -> get_min_priority();
-  int push_ready_first = coord_q -> get_min_priority();
-  auto output_push_pull_info = getenv("IGNORE_CHRIS_INFO");
-  int output =  output_push_pull_info ? 0 : 1;
-  bool flag = true;
-  if( push_ready_first != 1 && pull_ready_first != 1 && push_ready_first > pull_ready_first){
-    //means push should be the prior one, do not pull now.
-    flag = false;
-    if(output)
-      BPS_LOG(INFO) << "PULL delay: " << "push_ready_first is:" << push_ready_first << "pull_ready_first is:" << pull_ready_first;
-  }
-  if(!flag){
-    std::this_thread::sleep_for(std::chrono::nanoseconds(1000));
-    return true;
+  if(coord_q){
+      int pull_ready_first = q -> get_min_priority();
+      int push_ready_first = coord_q -> get_min_priority();
+      auto output_push_pull_info = getenv("IGNORE_CHRIS_INFO");
+      int output =  output_push_pull_info ? 0 : 1;
+      bool flag = true;
+      if( push_ready_first != 1 && pull_ready_first != 1 && push_ready_first > pull_ready_first){
+        //means push should be the prior one, do not pull now.
+        flag = false;
+        if(output)
+          BPS_LOG(INFO) << "PULL delay: " << "push_ready_first is:" << push_ready_first << "pull_ready_first is:" << pull_ready_first;
+      }
+      if(!flag){
+        std::this_thread::sleep_for(std::chrono::nanoseconds(1000));
+        return true;
+      }
   }
   auto task = q->getTask();
   if (task) {
