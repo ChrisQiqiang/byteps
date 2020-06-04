@@ -22,6 +22,7 @@
 #include <vector>
 #include "common.h"
 #include "ready_table.h"
+#include <set>
 
 namespace byteps {
 namespace common {
@@ -35,12 +36,13 @@ class BytePSScheduledQueue {
   std::shared_ptr<TensorTableEntry> getTask();
   std::shared_ptr<TensorTableEntry> getTask(uint64_t key);
   uint32_t pendingSize();
-  void reportFinish(int size);
+  void reportFinish(std::shared_ptr<TensorTableEntry> task);
   int get_min_priority();
 
  private:
   // TODO: use priority queue or heap
   std::vector<std::shared_ptr<TensorTableEntry>> _sq;
+  std::multiset <int, greater<int>> _transfer_window;
   std::mutex _mutex;
   uint64_t _credits;
   bool _is_scheduled;
