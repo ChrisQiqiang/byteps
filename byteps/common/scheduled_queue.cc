@@ -58,14 +58,12 @@ BytePSScheduledQueue::BytePSScheduledQueue(QueueType type) {
       break;
     case PUSH:
       if (BytePSGlobal::IsRootDevice()) {
-        _rt_push = BytePSGlobal::GetPushTable();
-        _rt_pull = BytePSGlobal::GetPullTable();
+        _rt = BytePSGlobal::GetPushTable();
       }
       break;
     case PULL:
       if(BytePSGlobal::IsRootDevice()) {
-        _rt_push = BytePSGlobal::GetPushTable();
-        _rt_pull = BytePSGlobal::GetPullTable();
+        _rt = BytePSGlobal::GetPullTable();
       }
     case COPYH2D:
       if (!BytePSGlobal::IsRootDevice()) {
