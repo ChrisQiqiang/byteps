@@ -42,7 +42,7 @@ class BytePSScheduledQueue {
  private:
   // TODO: use priority queue or heap
   std::vector<std::shared_ptr<TensorTableEntry>> _sq;
-  std::multiset <int, greater<int>> _transfer_window;
+  std::multiset <int, std::greater<int> > _transfer_window;
   std::mutex _mutex;
   uint64_t _credits;
   bool _is_scheduled;
