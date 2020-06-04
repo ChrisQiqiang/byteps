@@ -496,9 +496,10 @@ bool RunPushLoopOnce() {
   int push_ready_first = q -> get_min_priority();
   int pull_ready_first = coord_q -> get_min_priority();
   bool flag = true;
+  auto output_push_pull_info = getenv("IGNORE_CHRIS_INFO");
+  int output =  output_push_pull_info ? 0 : 1;
   if( push_ready_first != 1 && pull_ready_first != 1 && pull_ready_first > push_ready_first){
-    auto output_push_pull_info = getenv("IGNORE_CHRIS_INFO");
-    int output =  output_push_pull_info ? 0 : 1;
+
     if(output)
         BPS_LOG(INFO) << "PUSH delay: " << "push_ready_first is:" << push_ready_first << "pull_ready_first is:" << pull_ready_first;
     flag = false;
@@ -511,8 +512,9 @@ bool RunPushLoopOnce() {
   auto task = q->getTask();
   if (task) {
     BPS_CHECK(BytePSGlobal::IsRootDevice())
-        << "only root device should enter PUSH loop";
-    BPS_LOG(INFO) << "PUSH : priority" << task -> priority;
+        << "only root device should enter PUSH loop"; 
+    if(output)
+      BPS_LOG(INFO) << "PUSH : priority" << task -> priority;
     if (BytePSGlobal::IsDistributed()) {
       auto offset = task->offset;
       auto len = task->len;
@@ -550,12 +552,12 @@ bool RunPullLoopOnce() {
   auto coord_q = BytePSGlobal::GetScheduledQueue(coord_op);
   int pull_ready_first = q -> get_min_priority();
   int push_ready_first = coord_q -> get_min_priority();
+  auto output_push_pull_info = getenv("IGNORE_CHRIS_INFO");
+  int output =  output_push_pull_info ? 0 : 1;
   bool flag = true;
   if( push_ready_first != 1 && pull_ready_first != 1 && push_ready_first > pull_ready_first){
     //means push should be the prior one, do not pull now.
     flag = false;
-    auto output_push_pull_info = getenv("IGNORE_CHRIS_INFO");
-    int output =  output_push_pull_info ? 0 : 1;
     if(output)
       BPS_LOG(INFO) << "PULL delay: " << "push_ready_first is:" << push_ready_first << "pull_ready_first is:" << pull_ready_first;
   }
@@ -568,7 +570,8 @@ bool RunPullLoopOnce() {
     
     BPS_CHECK(BytePSGlobal::IsRootDevice())
         << "only root device should enter PULL loop";
-    BPS_LOG(INFO) << "PULL : priority" << task -> priority;
+    if(output)
+      BPS_LOG(INFO) << "PULL : priority" << task -> priority;
     // TODO: allow merging
     auto offset = task->offset;
     auto len = task->len;
