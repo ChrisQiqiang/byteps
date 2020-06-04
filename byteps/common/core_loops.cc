@@ -505,7 +505,14 @@ bool RunPushLoopOnce() {
           flag = false;
         }
         if(!flag){
-          std::this_thread::sleep_for(std::chrono::nanoseconds(1000));
+          if (BytePSGlobal::IsDistributed()) 
+              std::this_thread::sleep_for(std::chrono::nanoseconds(1000));
+          else
+          {
+              auto task = q->getTask();
+              BPS_CHECK(BytePSGlobal::IsCrossPcieSwitch());
+              FinishOrProceed(task);
+          }
           return true;
         }
         //means pull should be the prior one, do not push now.  all priority is negative.
