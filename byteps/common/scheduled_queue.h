@@ -50,6 +50,8 @@ class BytePSScheduledQueue {
   ReadyTable *_rt;
   ReadyTable *_rt_push;
   ReadyTable *_rt_pull;
+  //chris
+  int _window_size;
 };
 
 }  // namespace common

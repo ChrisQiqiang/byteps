@@ -42,7 +42,8 @@ BytePSScheduledQueue::BytePSScheduledQueue(QueueType type) {
 
   // _is_scheduled = (_is_scheduled || _qt == PUSH || _qt == PULL)
   _rt = nullptr;
-
+  auto _w_size = getenv("CHRIS_WINDOW_SIZE");
+  _window_size = _w_size ? atoi(_w_size) : 4;
   switch (_qt) {
     case REDUCE:
       if (BytePSGlobal::GetNccl()->IsSignalRoot()) {

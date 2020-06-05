@@ -495,28 +495,28 @@ bool RunPushLoopOnce() {
   auto coord_q = BytePSGlobal::GetScheduledQueue(coord_op);
   auto output_push_pull_info = getenv("IGNORE_CHRIS_INFO");
   int output =  output_push_pull_info ? 0 : 1;
-  // if(coord_q){
-  //       int push_ready_first = q -> get_min_priority();
-  //       int pull_ready_first = coord_q -> get_min_priority();
-  //       bool flag = true;
-  //       if( push_ready_first != 1 && pull_ready_first != 1 && pull_ready_first > push_ready_first){
-  //         if(output)
-  //             BPS_LOG(INFO) << "PUSH delay: " << "push_ready_first is:" << push_ready_first << "pull_ready_first is:" << pull_ready_first;
-  //         flag = false;
-  //       }
-  //       if(!flag){
-  //         if (BytePSGlobal::IsDistributed()) 
-  //             std::this_thread::sleep_for(std::chrono::nanoseconds(1000));
-  //         else
-  //         {
-  //             auto task = q->getTask();
-  //             BPS_CHECK(BytePSGlobal::IsCrossPcieSwitch());
-  //             FinishOrProceed(task);
-  //         }
-  //         return true;
-  //       }
-  //       //means pull should be the prior one, do not push now.  all priority is negative.
-  // }
+  if(coord_q){
+        int push_ready_first = q -> get_min_priority();
+        int pull_ready_first = coord_q -> get_min_priority();
+        bool flag = true;
+        if( push_ready_first != 1 && pull_ready_first != 1 && pull_ready_first > push_ready_first){
+          if(output)
+              BPS_LOG(INFO) << "PUSH delay: " << "push_ready_first is:" << push_ready_first << "pull_ready_first is:" << pull_ready_first;
+          flag = false;
+        }
+        if(!flag){
+          if (BytePSGlobal::IsDistributed()) 
+              std::this_thread::sleep_for(std::chrono::nanoseconds(1000));
+          else
+          {
+              auto task = q->getTask();
+              BPS_CHECK(BytePSGlobal::IsCrossPcieSwitch());
+              FinishOrProceed(task);
+          }
+          return true;
+        }
+        //means pull should be the prior one, do not push now.  all priority is negative.
+  }
 
   auto task = q->getTask();
   if (task) {
