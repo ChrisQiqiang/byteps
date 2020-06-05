@@ -224,7 +224,7 @@ void BytePSScheduledQueue::reportFinish(std::shared_ptr<TensorTableEntry> task) 
   return;
 }
 
-int BytePSScheduledQueue::get_min_priority(){
+int BytePSScheduledQueue::get_push_max_priority(){
     std::lock_guard<std::mutex> lock(_mutex);
     if(!_transfer_window.empty() && _sq.size()){
       auto first = _sq.begin();
@@ -241,5 +241,42 @@ int BytePSScheduledQueue::get_min_priority(){
       return 1; 
   }
 
+int BytePSScheduledQueue::get_pull_min_priority(){
+    std::lock_guard<std::mutex> lock(_mutex);
+    if(!_transfer_window.empty() && _sq.size()){
+      auto first = _sq.begin();
+      return std::max(*(_transfer_window.end() - 1), (*first) -> priority) ;
+    }
+    else if(!_transfer_window.empty()){
+      return *(_transfer_window.end() - 1);
+    }
+    else if(_sq.size()){
+      auto first = _sq.begin();
+      return (*first) -> priority;
+    }
+    else
+      return 1; 
+  }
+
+int BytePSScheduledQueue::get_first_element(){
+  if(!_sq.size())
+    return 1;
+  else
+    return (*first) -> priority;
+  
+}
+
+int BytePSScheduledQueue::get_transfer_window_info(int maximal){
+  std::lock_guard<std::mutex> lock(_mutex);
+  int res;
+  if(_transfer_window.empty())return 1;
+  if(maximal == 1){
+    res = *(_transfer_window.begin());
+  }
+  else
+    res = *(_transfer_window.end() - 1);
+  return res;
+ 
+}
 }  // namespace common
 }  // namespace byteps
