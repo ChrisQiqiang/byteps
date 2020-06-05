@@ -135,7 +135,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
       }
     }
     if (_is_scheduled) {
-      if ((*it)->len > _credits || (_qt != REDUCE && _transfer_window.size() >= 4)) {
+      if ((_qt == REDUCE && (*it)->len > _credits) || (_qt != REDUCE && _transfer_window.size() >= 4)) {
         continue;
       }
     }
@@ -148,8 +148,9 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
     task = *it;
     _sq.erase(it);
     if (_is_scheduled) {
-      _credits -= task->len;
-      _transfer_window.insert(task -> priority);
+      if(_qt == REDUCE)_credits -= task->len;
+      else
+        _transfer_window.insert(task -> priority);
     }
 
     BPS_CHECK(task->tensor_name != "");
@@ -202,8 +203,9 @@ uint32_t BytePSScheduledQueue::pendingSize() {
 void BytePSScheduledQueue::reportFinish(std::shared_ptr<TensorTableEntry> task) {
   if (_is_scheduled) {
     std::lock_guard<std::mutex> lock(_mutex);
-    _credits += task -> len;
-    _transfer_window.erase(_transfer_window.find(task -> priority));
+    if(_qt == REDUCE)_credits += task -> len;
+    else
+      _transfer_window.erase(_transfer_window.find(task -> priority));
   }
   return;
 }
