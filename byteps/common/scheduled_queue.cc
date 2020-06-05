@@ -135,7 +135,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
       }
     }
     if (_is_scheduled) {
-      if ((*it)->len > _credits || _transfer_window.size() >= 2) {
+      if ((*it)->len > _credits || (_qt != REDUCE && _transfer_window.size() >= 2)) {
         continue;
       }
     }
