@@ -83,19 +83,33 @@ BytePSScheduledQueue::BytePSScheduledQueue(QueueType type) {
 
 void BytePSScheduledQueue::addTask(std::shared_ptr<TensorTableEntry> entry) {
   std::lock_guard<std::mutex> lock(_mutex);
-  _sq.push_back(entry);
+  
   if (_is_scheduled) {
     // TODO: below can be optimized to O(n) using insertion sort
-    std::sort(
-        _sq.begin(), _sq.end(),
-        [](std::shared_ptr<TensorTableEntry> a,
-           std::shared_ptr<TensorTableEntry> b) {
-          if (a->priority == b->priority) {
-            return (a->key < b->key);  // from the first partition to the last
-          }
-          return (a->priority > b->priority);  // from higher priority to lower
-        });
+      for(auto it = _sq.begin(); it != sq.end(); it++){
+        auto task = *it;
+        auto tar = *entry;
+        if(task -> priority > tar -> priority || (task -> priority == tar -> priority && task -> key < tar -> key))
+          continue;
+        else 
+        {
+          _sq.insert(it, entry);
+          break;
+        }
+      }
+      //  std::sort(
+      //   _sq.begin(), _sq.end(),
+      //   [](std::shared_ptr<TensorTableEntry> a,
+      //      std::shared_ptr<TensorTableEntry> b) {
+      //     if (a->priority == b->priority) {
+      //       return (a->key < b->key);  // from the first partition to the last
+      //     }
+      //     return (a->priority > b->priority);  // from higher priority to lower
+      //   });
   }
+  else
+    _sq.push_back(entry);
+  
   BPS_CHECK(entry->tensor_name != "");
   BPS_LOG(TRACE) << "Queue " << LogStrings[_qt]
                  << " addTask: " << entry->tensor_name << " key: " << entry->key
