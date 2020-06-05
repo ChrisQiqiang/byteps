@@ -86,16 +86,19 @@ void BytePSScheduledQueue::addTask(std::shared_ptr<TensorTableEntry> entry) {
   
   if (_is_scheduled) {
     // TODO: below can be optimized to O(n) using insertion sort
+      bool flag = false;
       for(auto it = _sq.begin(); it != _sq.end(); it++){
         auto task = *it;
         if(task -> priority > entry -> priority || (task -> priority == entry -> priority && task -> key < entry -> key))
           continue;
         else 
         {
+          flag = true;
           _sq.insert(it, entry);
           break;
         }
       }
+      if(!flag)_sq.push_back(entry);
       //  std::sort(
       //   _sq.begin(), _sq.end(),
       //   [](std::shared_ptr<TensorTableEntry> a,
