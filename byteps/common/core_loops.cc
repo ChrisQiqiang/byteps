@@ -497,7 +497,7 @@ bool RunPushLoopOnce() {
   int output =  output_push_pull_info && atoi(output_push_pull_info) ? 0 : 1;
   if(coord_q){
         int push_ready_first = q -> get_first_element();
-        int pull_minimal = coord_q -> get_pull_min_priority(-1);
+        int pull_minimal = coord_q -> get_pull_min_priority();
         bool flag = true;
         if( push_ready_first != 1 && pull_minimal != 1 && pull_minimal > push_ready_first){
           if(output)
