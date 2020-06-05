@@ -554,21 +554,21 @@ bool RunPullLoopOnce() {
   auto coord_q = BytePSGlobal::GetScheduledQueue(coord_op);
   auto output_push_pull_info = getenv("IGNORE_CHRIS_INFO");
   int output =  output_push_pull_info && atoi(output_push_pull_info) ? 0 : 1;
-  // if(coord_q){
-  //     int pull_ready_first = q -> get_first_element();
-  //     int push_maximal = coord_q -> get_push_max_priority();
-  //     bool flag = true;
-  //     if( push_maximal != 1 && pull_ready_first != 1 && push_maximal > pull_ready_first){
-  //       //means push should be the prior one, do not pull now.
-  //       flag = false;
-  //       if(output)
-  //         BPS_LOG(INFO) << "PULL delay: " << "push_maximal is:" << push_maximal << "pull_ready_first is:" << pull_ready_first;
-  //     }
-  //     if(!flag){
-  //       std::this_thread::sleep_for(std::chrono::nanoseconds(1000));
-  //       return true;
-  //     }
-  // }
+  if(coord_q){
+      int pull_ready_first = q -> get_first_element();
+      int push_maximal = coord_q -> get_push_max_priority();
+      bool flag = true;
+      if( push_maximal != 1 && pull_ready_first != 1 && push_maximal > pull_ready_first){
+        //means push should be the prior one, do not pull now.
+        flag = false;
+        if(output)
+          BPS_LOG(INFO) << "PULL delay: " << "push_maximal is:" << push_maximal << "pull_ready_first is:" << pull_ready_first;
+      }
+      if(!flag){
+        std::this_thread::sleep_for(std::chrono::nanoseconds(1000));
+        return true;
+      }
+  }
   auto task = q->getTask();
   if (task) {
     
