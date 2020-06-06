@@ -227,7 +227,7 @@ void BytePSScheduledQueue::reportFinish(std::shared_ptr<TensorTableEntry> task) 
   return;
 }
 
-int BytePSScheduledQueue::get_push_max_priority(){
+int BytePSScheduledQueue::get_max_priority(){
     std::lock_guard<std::mutex> lock(_mutex);
     if(!_transfer_window.empty() && _sq.size()){
       auto first = _sq.begin();
@@ -244,11 +244,14 @@ int BytePSScheduledQueue::get_push_max_priority(){
       return 1; 
   }
 
-int BytePSScheduledQueue::get_pull_min_priority(){
+int BytePSScheduledQueue::get_min_priority(){
     std::lock_guard<std::mutex> lock(_mutex);
     if(!_transfer_window.empty() && _sq.size()){
       auto first = _sq.begin();
-      return std::min(*(_transfer_window.rbegin()), (*first) -> priority) ;
+      if(_transfer_window.size() < 4)
+        return std::min(*(_transfer_window.rbegin()), (*first) -> priority);
+      else
+        return  *(_transfer_window.rbegin()); 
     }
     else if(!_transfer_window.empty()){
       return *(_transfer_window.rbegin());

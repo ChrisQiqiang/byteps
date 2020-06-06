@@ -37,8 +37,8 @@ class BytePSScheduledQueue {
   std::shared_ptr<TensorTableEntry> getTask(uint64_t key);
   uint32_t pendingSize();
   void reportFinish(std::shared_ptr<TensorTableEntry> task);
-  int get_pull_min_priority();
-  int get_push_max_priority();
+  int get_min_priority();
+  int get_max_priority();
   int get_first_element();
   int get_transfer_window_size();
  private:
