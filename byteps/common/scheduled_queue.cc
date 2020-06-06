@@ -162,7 +162,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
       }
       else if(_qt == PULL)
       {
-        int dy_size = _in_backward ? _window_size / 2 : _window_size / 2;
+        int dy_size = _in_backward ? 0 : _window_size;
         if(_transfer_window.size() >= dy_size)
             continue;
       }
@@ -263,10 +263,10 @@ int BytePSScheduledQueue::get_min_priority(){
     if(!_transfer_window.empty() && _sq.size()){
       auto first = _sq.begin();
       int dy_size;
-      if(_in_backward && _qt == PUSH || !_in_backward && _qt == PULL)
-        dy_size = _window_size;
+      if(_qt == PUSH)
+        dy_size = _in_backward ? _window_size : _window_size / 2;
       else
-        dy_size = _window_size / 2;
+        dy_size = _in_backward ? 0 : _window_size;
       if(_transfer_window.size() < dy_size)
       // if this window is not full, return the minimal with first ready, else just return the minimal in the window.
         return std::min(*(_transfer_window.rbegin()), (*first) -> priority);

@@ -502,7 +502,7 @@ bool RunPushLoopOnce() {
         // int push_size = q -> get_transfer_window_size();
         // int pull_size = coord_q -> get_transfer_window_size();
         bool flag = true;
-        if(pull_minimal != 1 && pull_minimal > push_ready_first){
+        if(pull_minimal != 1 && pull_minimal >= push_ready_first){
           if(output)
               BPS_LOG(INFO) << "PUSH delay: " << "push_ready_first is:" << push_ready_first << "pull_minimal is:" << pull_minimal;
           flag = false;
@@ -565,7 +565,7 @@ bool RunPullLoopOnce() {
       // int push_size = q -> get_transfer_window_size();
       // int pull_size = coord_q -> get_transfer_window_size();
       bool flag = true;
-      if( push_minimal != 1 && push_minimal > pull_ready_first){
+      if( push_minimal != 1 && push_minimal >= pull_ready_first){
         //means push should be the prior one, do not pull now.
         flag = false;
         if(output)
