@@ -179,7 +179,7 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
       if(_qt == REDUCE)_credits -= task->len;
       else{
           _transfer_window.insert(task -> priority);
-          if(task -> priority == 0)
+          if(task -> priority == -1)
             _in_backward = false;
       }    
     }
