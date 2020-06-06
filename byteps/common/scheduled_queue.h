@@ -40,7 +40,7 @@ class BytePSScheduledQueue {
   int get_pull_min_priority();
   int get_push_max_priority();
   int get_first_element();
-  int get_transfer_window_info(int maximal);
+  int get_transfer_window_size();
  private:
   // TODO: use priority queue or heap
   std::vector<std::shared_ptr<TensorTableEntry>> _sq;

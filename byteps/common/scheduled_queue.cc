@@ -271,17 +271,17 @@ int BytePSScheduledQueue::get_first_element(){
   }
 }
 
-int BytePSScheduledQueue::get_transfer_window_info(int maximal){
+int BytePSScheduledQueue::get_transfer_window_size(){
   std::lock_guard<std::mutex> lock(_mutex);
-  int res;
-  if(_transfer_window.empty())return 1;
-  if(maximal == 1){
-    res = *(_transfer_window.begin());
-  }
-  else
-    res = *(_transfer_window.rbegin());
-  return res;
- 
+  // int res;
+  // if(_transfer_window.empty())return 1;
+  // if(maximal == 1){
+  //   res = *(_transfer_window.begin());
+  // }
+  // else
+  //   res = *(_transfer_window.rbegin());
+  return _transfer_window.size();
+
 }
 }  // namespace common
 }  // namespace byteps
