@@ -39,7 +39,7 @@ BytePSScheduledQueue::BytePSScheduledQueue(QueueType type) {
   _credits = _is_scheduled
               ? BytePSGlobal::GetPartitionBound() * credit_in_partition
               : 34359738368;  // 32GB, basically disabling credit control
-
+  _in_backward = true;
   // _is_scheduled = (_is_scheduled || _qt == PUSH || _qt == PULL)
   _rt = nullptr;
   auto _w_size = getenv("CHRIS_WINDOW_SIZE");
@@ -87,6 +87,7 @@ void BytePSScheduledQueue::addTask(std::shared_ptr<TensorTableEntry> entry) {
   if (_is_scheduled) {
     // TODO: below can be optimized to O(n) using insertion sort
       bool flag = false;
+      if(_qt == PUSH && !_sq.size())_in_backward = true;
       for(auto it = _sq.begin(); it != _sq.end(); it++){
         auto task = *it;
         if(task -> priority > entry -> priority || (task -> priority == entry -> priority && task -> key < entry -> key))
@@ -152,8 +153,18 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
       }
     }
     if (_is_scheduled) {
-      if ((_qt == REDUCE && (*it)->len > _credits) || (_qt != REDUCE && _transfer_window.size() >= _window_size)) {
-        continue;
+      if (_qt == REDUCE && (*it)->len > _credits)
+          continue;
+      else if(_qt == PUSH){
+        int dy_size = _in_backward ? _window_size : _window_size / 2;
+        if(_transfer_window.size() >= dy_size)
+          continue;
+      }
+      else if(_qt == PULL)
+      {
+        int dy_size = _in_backward ? _window_size / 2 : _window_size / 2;
+        if(_transfer_window.size() >= dy_size)
+            continue;
       }
     }
     if (_rt) {
@@ -166,8 +177,11 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
     _sq.erase(it);
     if (_is_scheduled) {
       if(_qt == REDUCE)_credits -= task->len;
-      else
-        _transfer_window.insert(task -> priority);
+      else{
+          _transfer_window.insert(task -> priority);
+          if(task -> priority == 0)
+            _in_backward = false;
+      }    
     }
 
     BPS_CHECK(task->tensor_name != "");
@@ -248,7 +262,13 @@ int BytePSScheduledQueue::get_min_priority(){
     std::lock_guard<std::mutex> lock(_mutex);
     if(!_transfer_window.empty() && _sq.size()){
       auto first = _sq.begin();
-      if(_transfer_window.size() < _window_size)
+      int dy_size;
+      if(_in_backward && _qt == PUSH || !_in_backward && _qt == PULL)
+        dy_size = _window_size;
+      else
+        dy_size = _window_size / 2;
+      if(_transfer_window.size() < dy_size)
+      // if this window is not full, return the minimal with first ready, else just return the minimal in the window.
         return std::min(*(_transfer_window.rbegin()), (*first) -> priority);
       else
         return  *(_transfer_window.rbegin()); 

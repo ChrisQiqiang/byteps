@@ -54,6 +54,7 @@ class BytePSScheduledQueue {
   ReadyTable *_rt_pull;
   //chris
   int _window_size;
+  bool _in_backward = true;
 };
 
 }  // namespace common
