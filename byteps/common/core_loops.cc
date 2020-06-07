@@ -563,8 +563,8 @@ bool RunPullLoopOnce() {
   if(coord_q){
         int push_minimal = q -> get_min_priority();
         int pull_ready_first = coord_q -> get_first_element();
-        int push_size = q -> get_transfer_window_size();
-        int pull_size = coord_q -> get_transfer_window_size();
+        int push_size = coord_q -> get_transfer_window_size();
+        int pull_size = q -> get_transfer_window_size();
         auto _w_size = getenv("CHRIS_WINDOW_SIZE");
         int _window_size = _w_size ? atoi(_w_size) : 8;
         bool flag = true;
