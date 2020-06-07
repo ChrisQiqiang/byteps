@@ -266,27 +266,19 @@ int BytePSScheduledQueue::get_max_priority(){
 
 int BytePSScheduledQueue::get_min_priority(){
     std::lock_guard<std::mutex> lock(_mutex);
-    // if(!_transfer_window.empty() && _sq.size()){
-    //   auto first = _sq.begin();
-    //   int dy_size;
-    //   if(_qt == PUSH)
-    //     dy_size = _in_backward ? _window_size : _window_size / 2;
-    //   else
-    //     dy_size = _in_backward ? 1 : _window_size;
-    //   if(_transfer_window.size() < dy_size)
-    //   // if this window is not full, return the minimal with first ready, else just return the minimal in the window.
-    //     return std::min(*(_transfer_window.rbegin()), (*first) -> priority);
-    //   else
-    //     return  *(_transfer_window.rbegin()); 
-    // }
-    // else if(!_transfer_window.empty()){
-    //   return *(_transfer_window.rbegin());
-    // }
-    // else if(_sq.size()){
-    //   auto first = _sq.begin();
-    //   return (*first) -> priority;
-    // }
-    // else
+    if(!_transfer_window.empty() && _sq.size()){
+      auto first = _sq.begin();
+      // if this window is not full, return the minimal with first ready, else just return the minimal in the window.
+        return std::min(*(_transfer_window.rbegin()), (*first) -> priority);
+    }
+    else if(!_transfer_window.empty()){
+      return *(_transfer_window.rbegin());
+    }
+    else if(_sq.size()){
+      auto first = _sq.begin();
+      return (*first) -> priority;
+    }
+    else
       return 1; 
   }
 
