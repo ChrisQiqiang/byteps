@@ -43,7 +43,7 @@ BytePSScheduledQueue::BytePSScheduledQueue(QueueType type) {
   // _is_scheduled = (_is_scheduled || _qt == PUSH || _qt == PULL)
   _rt = nullptr;
   auto _w_size = getenv("CHRIS_WINDOW_SIZE");
-  _window_size = _w_size ? atoi(_w_size) : 4;
+  _window_size = _w_size ? atoi(_w_size) : 8;
   switch (_qt) {
     case REDUCE:
       if (BytePSGlobal::GetNccl()->IsSignalRoot()) {
@@ -87,10 +87,10 @@ void BytePSScheduledQueue::addTask(std::shared_ptr<TensorTableEntry> entry) {
   if (_is_scheduled) {
     // TODO: below can be optimized to O(n) using insertion sort
       bool flag = false;
-      if(_qt == PUSH && !_sq.size() && _transfer_window.empty()){
-        _in_backward = true;
-        LOG(INFO) << "NOW INTO BACKWARD PROGRESS, _in_backward is true";
-      }
+      // if(_qt == PUSH && !_sq.size() && _transfer_window.empty()){
+      //   _in_backward = true;
+      //   LOG(INFO) << "NOW INTO BACKWARD PROGRESS, _in_backward is true";
+      // }
       for(auto it = _sq.begin(); it != _sq.end(); it++){
         auto task = *it;
         if(task -> priority > entry -> priority || (task -> priority == entry -> priority && task -> key < entry -> key))
@@ -156,19 +156,19 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
       }
     }
     if (_is_scheduled) {
-      if (_qt == REDUCE && (*it)->len > _credits)
+      if ((_qt == REDUCE && (*it)->len > _credits) || (_qt != REDUCE && _transfer_window.size() >= _window_size))
           continue;
-      else if(_qt == PUSH){
-        int dy_size = _in_backward ? _window_size : _window_size / 2;
-        if(_transfer_window.size() >= dy_size)
-          continue;
-      }
-      else if(_qt == PULL)
-      {
-        int dy_size = _in_backward ? 1 : _window_size;
-        if(_transfer_window.size() >= dy_size)
-            continue;
-      }
+      // else if(_qt == PUSH){
+      //   int dy_size = _in_backward ? _window_size : _window_size / 2;
+      //   if(_transfer_window.size() >= dy_size)
+      //     continue;
+      // }
+      // else if(_qt == PULL)
+      // {
+      //   int dy_size = _in_backward ? 1 : _window_size;
+      //   if(_transfer_window.size() >= dy_size)
+      //       continue;
+      // }
     }
     if (_rt) {
       if (!_rt->IsKeyReady((*it)->key)) {
@@ -182,10 +182,10 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
       if(_qt == REDUCE)_credits -= task->len;
       else{
           _transfer_window.insert(task -> priority);
-          if(task -> priority == -1){
-            _in_backward = false;
-            LOG(INFO) << "NOW INTO FORWARD PROGRESS, _in_backward is false";
-          }
+          // if(task -> priority == -1){
+          //   _in_backward = false;
+          //   LOG(INFO) << "NOW INTO FORWARD PROGRESS, _in_backward is false";
+          // }
             
       }    
     }
@@ -249,44 +249,44 @@ void BytePSScheduledQueue::reportFinish(std::shared_ptr<TensorTableEntry> task) 
 
 int BytePSScheduledQueue::get_max_priority(){
     std::lock_guard<std::mutex> lock(_mutex);
-    if(!_transfer_window.empty() && _sq.size()){
-      auto first = _sq.begin();
-      return std::max(*(_transfer_window.begin()), (*first) -> priority) ;
-    }
-    else if(!_transfer_window.empty()){
-      return *(_transfer_window.begin());
-    }
-    else if(_sq.size()){
-      auto first = _sq.begin();
-      return (*first) -> priority;
-    }
-    else
+    // if(!_transfer_window.empty() && _sq.size()){
+    //   auto first = _sq.begin();
+    //   return std::max(*(_transfer_window.begin()), (*first) -> priority) ;
+    // }
+    // else if(!_transfer_window.empty()){
+    //   return *(_transfer_window.begin());
+    // }
+    // else if(_sq.size()){
+    //   auto first = _sq.begin();
+    //   return (*first) -> priority;
+    // }
+    // else
       return 1; 
   }
 
 int BytePSScheduledQueue::get_min_priority(){
     std::lock_guard<std::mutex> lock(_mutex);
-    if(!_transfer_window.empty() && _sq.size()){
-      auto first = _sq.begin();
-      int dy_size;
-      if(_qt == PUSH)
-        dy_size = _in_backward ? _window_size : _window_size / 2;
-      else
-        dy_size = _in_backward ? 1 : _window_size;
-      if(_transfer_window.size() < dy_size)
-      // if this window is not full, return the minimal with first ready, else just return the minimal in the window.
-        return std::min(*(_transfer_window.rbegin()), (*first) -> priority);
-      else
-        return  *(_transfer_window.rbegin()); 
-    }
-    else if(!_transfer_window.empty()){
-      return *(_transfer_window.rbegin());
-    }
-    else if(_sq.size()){
-      auto first = _sq.begin();
-      return (*first) -> priority;
-    }
-    else
+    // if(!_transfer_window.empty() && _sq.size()){
+    //   auto first = _sq.begin();
+    //   int dy_size;
+    //   if(_qt == PUSH)
+    //     dy_size = _in_backward ? _window_size : _window_size / 2;
+    //   else
+    //     dy_size = _in_backward ? 1 : _window_size;
+    //   if(_transfer_window.size() < dy_size)
+    //   // if this window is not full, return the minimal with first ready, else just return the minimal in the window.
+    //     return std::min(*(_transfer_window.rbegin()), (*first) -> priority);
+    //   else
+    //     return  *(_transfer_window.rbegin()); 
+    // }
+    // else if(!_transfer_window.empty()){
+    //   return *(_transfer_window.rbegin());
+    // }
+    // else if(_sq.size()){
+    //   auto first = _sq.begin();
+    //   return (*first) -> priority;
+    // }
+    // else
       return 1; 
   }
 

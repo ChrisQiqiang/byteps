@@ -497,14 +497,13 @@ bool RunPushLoopOnce() {
   int output =  output_push_pull_info && atoi(output_push_pull_info) ? 0 : 1;
   if(coord_q && BytePSGlobal::IsDistributed()){
         int push_ready_first = q -> get_first_element();
-        int pull_ready_first = coord_q -> get_first_element();
-        int push_size = q -> get_transfer_window_size();
-        int pull_size = coord_q -> get_transfer_window_size();
-        auto _w_size = getenv("CHRIS_WINDOW_SIZE");
-        int _window_size = _w_size ? atoi(_w_size) : 8;
+        // int pull_ready_first = coord_q -> get_first_element();
+        int pull_minimal = coord_q -> get_min_priority();
+        // int push_size = q -> get_transfer_window_size();
+        // int pull_size = coord_q -> get_transfer_window_size();
         bool flag = true;
-        if((pull_ready_first != 1 && pull_ready_first > push_ready_first) || push_size + pull_size >= _window_size){
-          if(output && push_size + pull_size < _window_size)
+        if(pull_minimal != 1 && pull_minimal > push_ready_first && push_ready_first != 0){
+          if(output)
               BPS_LOG(INFO) << "PUSH delay: " << "push_ready_first is:" << push_ready_first << "pull_minimal is:" << pull_minimal;
           flag = false;
         }
@@ -559,17 +558,17 @@ bool RunPullLoopOnce() {
   auto output_push_pull_info = getenv("IGNORE_CHRIS_INFO");
   int output =  output_push_pull_info && atoi(output_push_pull_info) ? 0 : 1;
   if(coord_q){
-        int push_ready_first = q -> get_first_element();
-        int pull_ready_first = coord_q -> get_first_element();
-        int push_size = q -> get_transfer_window_size();
-        int pull_size = coord_q -> get_transfer_window_size();
-        auto _w_size = getenv("CHRIS_WINDOW_SIZE");
-        int _window_size = _w_size ? atoi(_w_size) : 8;
-        bool flag = true;
-      if( push_ready_first != 1 && push_ready_first >= pull_ready_first || pull_size + push_size >= _window_size){
+      int pull_ready_first = q -> get_first_element();
+      int push_minimal = coord_q -> get_min_priority();
+      // int push_ready_first = q -> get_first_element();
+      // int pull_ready_first = coord_q -> get_first_element();
+      // int push_size = q -> get_transfer_window_size();
+      // int pull_size = coord_q -> get_transfer_window_size();
+      bool flag = true;
+      if( push_minimal != 1 && push_minimal >= pull_ready_first && pull_ready_first != 0){
         //means push should be the prior one, do not pull now.
         flag = false;
-        if(output && pull_size + push_size < _window_size)
+        if(output)
           BPS_LOG(INFO) << "PULL delay: " << "push_minimal is:" << push_minimal << "pull_ready_first is:" << pull_ready_first;
       }
       if(!flag){
