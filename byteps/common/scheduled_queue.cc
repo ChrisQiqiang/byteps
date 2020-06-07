@@ -87,7 +87,7 @@ void BytePSScheduledQueue::addTask(std::shared_ptr<TensorTableEntry> entry) {
   if (_is_scheduled) {
     // TODO: below can be optimized to O(n) using insertion sort
       bool flag = false;
-      if(_qt == PUSH && !_sq.size()){
+      if(_qt == PUSH && !_sq.size() && _transfer_window.empty()){
         _in_backward = true;
         LOG(INFO) << "NOW INTO BACKWARD PROGRESS, _in_backward is true";
       }
