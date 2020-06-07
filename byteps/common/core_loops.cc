@@ -505,7 +505,7 @@ bool RunPushLoopOnce() {
         bool flag = true;
         if((pull_ready_first != 1 && pull_ready_first > push_ready_first) || push_size + pull_size >= _window_size){
           if(output && push_size + pull_size < _window_size)
-              BPS_LOG(INFO) << "PUSH delay: " << "push_ready_first is:" << push_ready_first << "pull_minimal is:" << pull_minimal;
+              BPS_LOG(INFO) << "PUSH delay: " << "push_ready_first is:" << push_ready_first << "pull_minimal is:" << pull_ready_first;
           flag = false;
         }
         if(!flag){
@@ -570,7 +570,7 @@ bool RunPullLoopOnce() {
         //means push should be the prior one, do not pull now.
         flag = false;
         if(output && pull_size + push_size < _window_size)
-          BPS_LOG(INFO) << "PULL delay: " << "push_minimal is:" << push_minimal << "pull_ready_first is:" << pull_ready_first;
+          BPS_LOG(INFO) << "PULL delay: " << "push_minimal is:" << push_ready_first << "pull_ready_first is:" << pull_ready_first;
       }
       if(!flag){
         std::this_thread::sleep_for(std::chrono::nanoseconds(1000));
