@@ -245,8 +245,9 @@ void BytePSScheduledQueue::reportFinish(std::shared_ptr<TensorTableEntry> task) 
         _transfer_window.erase(_transfer_window.find(task -> priority));
         auto output_push_pull_info = getenv("IGNORE_CHRIS_INFO");
         int output =  output_push_pull_info && atoi(output_push_pull_info) ? 0 : 1;
+        std::string tp = _qt == PUSH ? : "PUSH" : "PULL";
         if(output)
-          BPS_LOG(INFO) << (_qt == PUSH : "PUSH" : "PULL") << task -> priority << "is done";
+          BPS_LOG(INFO) << tp << task -> priority << "is done";
     }
       
   }
