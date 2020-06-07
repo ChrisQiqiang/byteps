@@ -506,7 +506,7 @@ bool RunPushLoopOnce() {
         if((pull_minimal != 1 && pull_minimal > push_ready_first) || push_size + pull_size >= _window_size){
           if(output && push_size + pull_size < _window_size)
               BPS_LOG(INFO) << "PUSH delay: " << "push_ready_first is:" << push_ready_first << "pull_minimal is:" << pull_minimal;
-          else
+          else if(output)
               BPS_LOG(INFO) << "PUSH delay: " << "push_size is:" << push_size << "pull_size is:" << pull_size;
           flag = false;
         }
@@ -573,7 +573,7 @@ bool RunPullLoopOnce() {
         flag = false;
         if(output && pull_size + push_size < _window_size)
           BPS_LOG(INFO) << "PULL delay: " << "push_minimal is:" << push_minimal << "pull_ready_first is:" << pull_ready_first;
-        else
+        else if(output)
           BPS_LOG(INFO) << "PULL delay: " << "push_size is:" << push_size << "pull_size is:" << pull_size;
       }
       if(!flag){
