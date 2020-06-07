@@ -513,8 +513,6 @@ bool RunPushLoopOnce() {
         if(!flag){
           if(push_size + pull_size < _window_size)
               std::this_thread::sleep_for(std::chrono::nanoseconds(1000));
-          else
-              std::this_thread::sleep_for(std::chrono::nanoseconds(1000000));
           return true;
         }
         //means pull should be the prior one, do not push now.  all priority is negative.
