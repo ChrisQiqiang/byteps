@@ -87,7 +87,10 @@ void BytePSScheduledQueue::addTask(std::shared_ptr<TensorTableEntry> entry) {
   if (_is_scheduled) {
     // TODO: below can be optimized to O(n) using insertion sort
       bool flag = false;
-      if(_qt == PUSH && !_sq.size())_in_backward = true;
+      if(_qt == PUSH && !_sq.size()){
+        _in_backward = true;
+        LOG(INFO) << "NOW INTO BACKWARD PROGRESS, _in_backward is true";
+      }
       for(auto it = _sq.begin(); it != _sq.end(); it++){
         auto task = *it;
         if(task -> priority > entry -> priority || (task -> priority == entry -> priority && task -> key < entry -> key))
@@ -179,8 +182,11 @@ std::shared_ptr<TensorTableEntry> BytePSScheduledQueue::getTask() {
       if(_qt == REDUCE)_credits -= task->len;
       else{
           _transfer_window.insert(task -> priority);
-          if(task -> priority == -1)
+          if(task -> priority == -1){
             _in_backward = false;
+            LOG(INFO) << "NOW INTO FORWARD PROGRESS, _in_backward is false";
+          }
+            
       }    
     }
 
