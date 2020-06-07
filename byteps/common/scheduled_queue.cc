@@ -290,7 +290,7 @@ int BytePSScheduledQueue::get_min_priority(){
   }
 
 int BytePSScheduledQueue::get_first_element(){
-  // std::lock_guard<std::mutex> lock(_mutex);
+  std::lock_guard<std::mutex> lock(_mutex);
   if(!_sq.size())
     return 1;
   else
