@@ -247,7 +247,7 @@ void BytePSScheduledQueue::reportFinish(std::shared_ptr<TensorTableEntry> task) 
         int output =  output_push_pull_info && atoi(output_push_pull_info) ? 0 : 1;
         std::string tp = _qt == PUSH ? "PUSH" : "PULL";
         if(output)
-          BPS_LOG(INFO) << tp << task -> priority << "is done";
+          BPS_LOG(INFO) << tp << " " <<  task -> priority << "is done." << "transfer_window_size is: " << _transfer_window.size();
     }
       
   }
@@ -298,7 +298,7 @@ int BytePSScheduledQueue::get_first_element(){
 }
 
 int BytePSScheduledQueue::get_transfer_window_size(){
-  // std::lock_guard<std::mutex> lock(_mutex);
+  std::lock_guard<std::mutex> lock(_mutex);
   // int res;
   // if(_transfer_window.empty())return 1;
   // if(maximal == 1){
